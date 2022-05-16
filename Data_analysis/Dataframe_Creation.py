@@ -22,11 +22,13 @@ from functools import partial
 import pandas as pd
 import numpy as np
 import math
-import matplotlib as plt
+import matplotlib.pyplot as plt
+
+sample_number = 60
 
 # Dataframe import for aggregate data analysis
 print("------------------------------- New run ---------------------------------")
-df = pd.read_csv('3_05P.csv', sep=";")
+df = pd.read_csv('10_05P.csv', sep=";")
 df.columns = ("Timestamp_CO2", "CO2Sange", "Timestamp_deltaCO2",
               "DeltaCO2", "Sentec", "Rebreathing_mark")
 print(df.head(10))
@@ -87,13 +89,13 @@ average_total_CO2 = 0
 for i in range(start_rebreathing, 0, -1):
     total_CO2 += CO2_data[i]
 
-print("\n\nTotal CO2 before rebreathing:")
-print(total_CO2)
+#print("\n\nTotal CO2 before rebreathing:")
+# print(total_CO2)
 
 average_total_CO2 = float(total_CO2/start_rebreathing)
-print("\n\nAverage CO2 before rebreathing:")
-print(average_total_CO2)
-print("\n\n")
+#print("\n\nAverage CO2 before rebreathing:")
+# print(average_total_CO2)
+# print("\n\n")
 
 # Pre-rebreathing Mean interval values extraction (10 samples average)
 total_CO2 = 0
@@ -105,7 +107,6 @@ add_sentec = 0
 averages_device_pre = []
 averages_sentec_pre = []
 j = 0
-sample_number = 10
 
 for i in range(start_rebreathing, 0, -1):
     partial_total_co2 += CO2_data[i]
@@ -113,25 +114,25 @@ for i in range(start_rebreathing, 0, -1):
     # print(CO2_data[i])
     if((start_rebreathing-i+1) % sample_number == 0 and (start_rebreathing-i+1) != 0):
         # print(i)
-        add_co2 = round(float(partial_total_co2/10), 2)
-        add_sentec = round(float(partial_total_sentec/10), 2)
+        add_co2 = round(float(partial_total_co2/sample_number), 2)
+        add_sentec = round(float(partial_total_sentec/sample_number), 2)
         averages_device_pre.append(add_co2)
         averages_sentec_pre.append(add_sentec)
         j = j + 1
         partial_total_co2 = 0
         partial_total_sentec = 0
 
-print("\n\nArray of average values, first part")
-print(averages_device_pre)
+#print("\n\nArray of average values, first part")
+# print(averages_device_pre)
 
 # Need of reverting the array because the for loop is done from
 # start rebreathing up, so values need to be reindexed
 averages_device_pre.reverse()
 averages_sentec_pre.reverse()
-print(averages_device_pre)
+# print(averages_device_pre)
 averages_device_pre.append("START")  # to martk start rebreathing
 averages_sentec_pre.append("START")
-print(averages_device_pre)
+# print(averages_device_pre)
 
 
 '''
@@ -154,16 +155,16 @@ for i in range(start_rebreathing+1, len(CO2_data), 1):
     partial_total_co2 += CO2_data[i]
     partial_total_sentec += Sentec_data[i]
     if((i-(start_rebreathing+1)+1) % sample_number == 0 and (i-(start_rebreathing+1)+1) != 0):
-        add_co2 = round(float(partial_total_co2/10), 2)
-        add_sentec = round(float(partial_total_sentec/10), 2)
+        add_co2 = round(float(partial_total_co2/sample_number), 2)
+        add_sentec = round(float(partial_total_sentec/sample_number), 2)
         averages_device_post.append(add_co2)
         averages_sentec_post.append(add_sentec)
         j = j + 1
         partial_total_co2 = 0
         partial_total_sentec = 0
 
-print("\n\nArray of average values, second part")
-print(averages_device_post)
+#print("\n\nArray of average values, second part")
+# print(averages_device_post)
 
 # Linking the two array parts and creating a df
 averages_device_complete = np.concatenate(
@@ -172,14 +173,17 @@ averages_sentec_complete = np.concatenate(
     (averages_sentec_pre, averages_sentec_post))
 # averages_device_pre.append(averages_device_post)
 # print(averages_device_pre)
-print("\n\nConcatenated array")
-print(averages_device_complete)
+#print("\n\nConcatenated array")
+# print(averages_device_complete)
+#print("\n\nArray elements type")
+# it is a numpy string, must be converted to float
+# print(type(averages_device_complete[0]))
 
 print("\n\nDataframe")
 CO2_df = pd.DataFrame(averages_device_complete)
 Sentec_df = pd.DataFrame(averages_sentec_complete)
 
-print("\n\nCO2 averages dataframe:")
+print("\nCO2 averages dataframe:")
 print(CO2_df)
 
 print("\n\nSentec averages dataframe:")
@@ -190,13 +194,36 @@ CO2_df.to_csv('CO2_dataframe_exported.csv', sep=';')
 Sentec_df.to_csv('Sentec_dataframe_exported.csv', sep=';')
 
 
-plt.rcParams["figure.figsize"] = [7.50, 3.50]
-plt.rcParams["figure.autolayout"] = True
+'''
+------------------------------------------------------------------------------------------
+Data plotting
+ 
+Complete arrays of averaged values are plotted, both for the PCB CO2 device and the 
+Sentec device
+------------------------------------------------------------------------------------------
+'''
 
-x = np.array([5, 4, 1, 4, 5])
-y = np.sort(x)
+averages_device_pre.remove("START")
+averages_sentec_pre.remove("START")
+averages_device_complete = np.concatenate(
+    (averages_device_pre, averages_device_post))
+averages_sentec_complete = np.concatenate(
+    (averages_sentec_pre, averages_sentec_post))
 
-plt.title("Line graph")
-plt.plot(x, y, color="red")
+figure1 = plt.figure(1)
+y1 = averages_sentec_complete
+x1 = range(0, len(averages_sentec_complete), 1)
+plt.title("Sentec")
+plt.plot(x1, y1, '.-', color="red", linewidth='1')
+plt.xlabel('Time stamp')
+plt.ylabel('Measured value [mmHg]')
+
+figure2 = plt.figure(2)
+y2 = averages_device_complete
+x2 = range(0, len(averages_device_complete), 1)
+plt.title("Device PCB")
+plt.plot(x2, y2, '*-', color="blue", linewidth='1')
+plt.xlabel('Time stamp')
+plt.ylabel('Measured value [ppm]')
 
 plt.show()
