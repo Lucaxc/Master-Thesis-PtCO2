@@ -24,7 +24,7 @@ import numpy as np
 import math
 import matplotlib.pyplot as plt
 
-sample_number = 60
+sample_number = 30
 
 # Dataframe import for aggregate data analysis
 print("------------------------------- New run ---------------------------------")
