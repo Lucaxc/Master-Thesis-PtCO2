@@ -13,7 +13,6 @@ This script is used to perform statistical analysis on data retrieved from  scri
 ------------------------------------------------------------------------------------------
 '''
 
-from email.mime import base
 from functools import partial
 from pickle import FALSE, TRUE
 from turtle import color
@@ -26,6 +25,15 @@ import statistics as stat
 print("-------------------------------------------------------------------------")
 print("------------------------------- New run ---------------------------------")
 print("-------------------------------------------------------------------------")
+
+
+'''
+---------------------------------------------------------------------------------
+DATAFRAME IMPORT
+
+In the following section dataframes are imported and prepared for data analysis.
+---------------------------------------------------------------------------------
+'''
 df = pd.read_csv('CO2_dataframe_polso.csv', sep=";")
 df_sentec = pd.read_csv('Sentec_dataframe_polso.csv', sep=";")
 print("\n\nDataframe PCB with START:")
@@ -73,6 +81,13 @@ print("\n\nDataframe PCB without NaN rows:")
 print(df)
 # print(type(df["28_01"][0]))
 
+'''
+---------------------------------------------------------------------------------
+DATA MERGE
+
+In the following section dataframes are imported and prepared for data analysis.
+---------------------------------------------------------------------------------
+'''
 # Summing values row by row
 Data_matrix = []
 Data_matrix_sentec = []
