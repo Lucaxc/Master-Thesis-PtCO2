@@ -35,13 +35,13 @@ DATAFRAME IMPORT
 In the following section dataframes are imported and prepared for data analysis.
 ---------------------------------------------------------------------------------
 '''
-df_pcb = pd.read_csv('CO2_df_30_median_L.csv', sep=";")
-df_sentec = pd.read_csv('Sentec_df_30_median_L.csv', sep=";")
+df_pcb = pd.read_csv('CO2_df_30_median_p.csv', sep=";")
+df_sentec = pd.read_csv('Sentec_df_30_median_p.csv', sep=";")
 print("\n\nDataframe PCB with START:")
 print(df_pcb)
 
 # Rebreathing index identification
-index_start_rebreathing = df_pcb[df_pcb["28_01L"] == "START"].index.values
+index_start_rebreathing = df_pcb[df_pcb["28_01P"] == "START"].index.values
 print("\nIndex start rebreathing: ")
 print(index_start_rebreathing)
 
@@ -111,6 +111,8 @@ print(Data_matrix)
 # Generation of arrays corresponding to columns, subtraction of the baseline and deltas computation
 Data_matrix_no_offset = Data_matrix
 Data_matrix_no_offset_sentec = Data_matrix_sentec
+delta_matrix_pcb = []
+delta_matrix_sentec = []
 print("\n\n")
 print(Data_matrix_no_offset[0])
 print("\n\nColumns of data matrix: ")
@@ -127,7 +129,7 @@ for i in range(0, len(Data_matrix_no_offset), 1):
 
     # baseline subrtaction from array
     support_PCB = support_PCB - baseline_arr_PCB[i]
-    # print(support_PCB)
+    delta_matrix_pcb.append(support_PCB)
     # print(max(support_PCB[(int(index_start_rebreathing)-offset-1):-1]))
     delta_PCB.append(
         round(max(support_PCB[(int(index_start_rebreathing)-offset-1):-1]), 2))
@@ -135,11 +137,17 @@ for i in range(0, len(Data_matrix_no_offset), 1):
 
     # baseline subrtaction from array
     support_sentec = support_sentec - baseline_arr_sentec[i]
+    delta_matrix_sentec.append(support_sentec)
     # print(support_sentec)
     # print(max(support_sentec[(int(index_start_rebreathing)-offset-1):-1]))
     delta_sentec.append(
         round(max(support_sentec[(int(index_start_rebreathing)-offset-1):-1]), 2))
 
+print("\n\n------------------------------------------------------------------------------------")
+print("\n\nMatrix of delta PCB:")
+print(delta_matrix_pcb)
+print("\n\nMatrix of delta Sentec:")
+print(delta_matrix_sentec)
 print("\n\n------------------------------------------------------------------------------------")
 print("PCB Delta values from baseline: ")
 print(delta_PCB)
@@ -150,49 +158,92 @@ print("-------------------------------------------------------------------------
 # Generation of a unique array for aggregated analysis
 arr_sum_device = []
 arr_sum_sentec = []
+arr_sum_device_delta = []
+arr_sum_sentec_delta = []
 partial_total_device = 0
 partial_total_sentec = 0
+partial_total_device_delta = 0
+partial_total_sentec_delta = 0
 
 for j in range(0, rows, 1):
     for i in range(0, columns, 1):
         partial_total_device += round(float(Data_matrix[i][j]), 2)
         partial_total_sentec += round(float(Data_matrix_sentec[i][j]), 2)
+        partial_total_device_delta += round(float(delta_matrix_pcb[i][j]), 2)
+        partial_total_sentec_delta += round(
+            float(delta_matrix_sentec[i][j]), 2)
 
     # print(Data_matrix[i][j])
     arr_sum_device.append(round(partial_total_device/columns, 2))
     arr_sum_sentec.append(round(partial_total_sentec/columns, 2))
+    arr_sum_device_delta.append(round(partial_total_device_delta/columns, 2))
+    arr_sum_sentec_delta.append(round(partial_total_sentec_delta/columns, 2))
     partial_total_device = 0
     partial_total_sentec = 0
+    partial_total_device_delta = 0
+    partial_total_sentec_delta = 0
+
 
 print("\n\nArray of the sum:")
 print(arr_sum_device)
 print(arr_sum_sentec)
 
+print("\n\nArray of the delta sum:")
+print(arr_sum_device_delta)
+print(arr_sum_sentec_delta)
+
 print("\n\nNumber of array elements:")
 print(len(arr_sum_device))
 print(len(arr_sum_sentec))
+
+print("\n\nNumber of array elements delta:")
+print(len(arr_sum_device_delta))
+print(len(arr_sum_sentec_delta))
 
 # Plot with mean values (no standard deviation)
 plt.figure(0)
 y1 = arr_sum_sentec
 x1 = range(0, len(arr_sum_sentec), 1)
-plt.title("MEDIAN VALUES - Sentec Device Lobe data")
+plt.title("MEDIAN VALUES - Sentec Device Forearm data")
 plt.plot(x1, y1, '.-', color="red", linewidth='1',)
 plt.xlabel('Sample Number')
 plt.ylabel('Measured value [mmHg]')
 plt.grid(axis='y')
-plt.axvline(x=index_start_rebreathing-offset)
+plt.axvline(x=index_start_rebreathing-offset-1)
 plt.legend(['Median values', 'Start rebreathing'], loc="upper left")
 
 plt.figure(1)
-y1 = arr_sum_device
-x1 = range(0, len(arr_sum_device), 1)
-plt.title("MEDIAN VALUES - PCB Device Lobe data")
+y1 = arr_sum_sentec_delta
+x1 = range(0, len(arr_sum_sentec_delta), 1)
+plt.title("DELTA MEDIAN VALUES - Sentec Device Forearm data")
+plt.plot(x1, y1, '.-', color="red", linewidth='1',)
+plt.xlabel('Sample Number')
+plt.ylabel('Measured value [mmHg]')
+plt.grid(axis='y')
+plt.axvline(x=index_start_rebreathing-offset-1)
+plt.legend(['Median values', 'Start rebreathing'], loc="upper left")
+
+plt.figure(2)
+y1 = arr_sum_device_delta
+x1 = range(0, len(arr_sum_device_delta), 1)
+plt.title("DELTA MEDIAN VALUES - PCB Device Forearm data")
 plt.plot(x1, y1, '.-', color="red", linewidth='1',)
 plt.xlabel('Sample Number')
 plt.ylabel('Measured value [ppm]')
 plt.grid(axis='y')
-plt.axvline(x=index_start_rebreathing-offset)
+plt.axvline(x=index_start_rebreathing-offset-1)
+plt.legend(['Median values', 'Start rebreathing'], loc="upper left")
+
+
+plt.figure(3)
+y1 = arr_sum_device
+x1 = range(0, len(arr_sum_device), 1)
+plt.title("MEDIAN VALUES - PCB Device Forearm data")
+plt.plot(x1, y1, '.-', color="red", linewidth='1',)
+plt.xlabel('Sample Number')
+plt.ylabel('Measured value [ppm]')
+plt.grid(axis='y')
+plt.axvline(x=index_start_rebreathing-offset-1)
 plt.legend(['Median values', 'Start rebreathing'], loc="upper left")
 
 # Standard deviation computation
@@ -217,8 +268,8 @@ average_std = round(float(total_std/len(std_arr)), 2)
 print("\n\nAverage std: %s" % average_std)
 
 # Plot with standard deviation
-plt.figure(2)
-plt.title("Mean values and Standard deviation - PCB Device Lobe data")
+plt.figure(4)
+plt.title("Mean values and Standard deviation - PCB Device Forearm data")
 plt.errorbar(x1, y1, std_arr, color='blue',
              fmt='-*', ecolor="red", elinewidth=0.5)
 plt.xlabel('Sample Number')
@@ -226,11 +277,11 @@ plt.ylabel('Measured value [ppm]')
 plt.grid(axis='y')
 plt.text(30, 1010, "Average Standard Deviation = %s ppm" %
          average_std, fontsize=7)
-plt.axvline(x=index_start_rebreathing-offset)
+plt.axvline(x=index_start_rebreathing-offset-1)
 plt.legend(['Start rebreathing', 'Average values and std'], loc="upper left")
 
 # Plot with couples of delta values - for correlation
-plt.figure(3)
+plt.figure(5)
 plt.title("Sentec - PCB device correlation analysis")
 plt.xlabel('Sentec measured CO2 [mmHg]')
 plt.ylabel('PCB device measured [ppm]')
@@ -256,15 +307,14 @@ for j in range(0, rows, 1):
 print("\n\nData for boxplot (dataframe's rows extracted):")
 print(data_for_boxplot)
 
-plt.figure(4)
-plt.title("PCB Device Lobe boxplot")
+plt.figure(6)
+plt.title("PCB Device Forearm boxplot")
 plt.xlabel('Sample number')
 plt.ylabel('Measured value [ppm]')
 plt.grid(axis='y')
-plt.axvline(x=index_start_rebreathing-offset)
+plt.axvline(x=index_start_rebreathing-offset-1)
 plt.legend(['Start Rebreathing', 'Start rebreathing'], loc="upper left")
 plt.boxplot(data_for_boxplot)
 
 
-plt.figure(5)
 plt.show()
