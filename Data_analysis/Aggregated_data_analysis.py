@@ -9,7 +9,8 @@ This script is used to perform statistical analysis on data retrieved from  scri
 
 \Parameters:
     @param <filename.csv>: at the beginning of the script change the file name to
-            associate the running of the script with the desired CSV file.
+            associate the running of the script with the desired CSV file. It includes
+            processing both for PCB device data and Sentec device data
 ------------------------------------------------------------------------------------------
 '''
 
@@ -34,22 +35,22 @@ DATAFRAME IMPORT
 In the following section dataframes are imported and prepared for data analysis.
 ---------------------------------------------------------------------------------
 '''
-df = pd.read_csv('CO2_dataframe_polso.csv', sep=";")
-df_sentec = pd.read_csv('Sentec_dataframe_polso.csv', sep=";")
+df_pcb = pd.read_csv('CO2_df_30_median_L.csv', sep=";")
+df_sentec = pd.read_csv('Sentec_df_30_median_L.csv', sep=";")
 print("\n\nDataframe PCB with START:")
-print(df)
+print(df_pcb)
 
 # Rebreathing index identification
-index_start_rebreathing = df[df["28_01P"] == "START"].index.values
+index_start_rebreathing = df_pcb[df_pcb["28_01L"] == "START"].index.values
 print("\nIndex start rebreathing: ")
 print(index_start_rebreathing)
 
 # Baseline array extraction
 baseline_arr_PCB = []
 baseline_arr_sentec = []
-for i in range(0, len(df.columns), 1):
+for i in range(0, len(df_pcb.columns), 1):
     baseline_arr_PCB.append(
-        round(float(df.iloc[index_start_rebreathing-1, i].values), 2))
+        round(float(df_pcb.iloc[index_start_rebreathing-1, i].values), 2))
     baseline_arr_sentec.append(
         round(float(df_sentec.iloc[index_start_rebreathing-1, i].values), 2))
 
@@ -59,33 +60,34 @@ print("\n\nBaseline array Sentec: ")
 print(baseline_arr_sentec)
 
 # START row removal
-df = df.drop(index_start_rebreathing, axis=0)
-df = df.reset_index()
+df_pcb = df_pcb.drop(index_start_rebreathing, axis=0)
+df_pcb = df_pcb.reset_index()
 df_sentec = df_sentec.drop(index_start_rebreathing, axis=0)
 df_sentec = df_sentec.reset_index()
 print("\n\nDataframe PCB without START row:")
-print(df)
+print(df_pcb)
 
 # Removing Rows with NaN
-df = df.dropna()
+df_pcb = df_pcb.dropna()
 df_sentec = df_sentec.dropna()
-offset = df.iloc[0, 0]
+offset = df_pcb.iloc[0, 0]
 offset = int(offset)
-
 print("\n\nOffset is: %s" % offset)
-df.pop('index')
+
+df_pcb.pop('index')
 df_sentec.pop('index')
-df = df.reset_index(drop=TRUE)
+df_pcb = df_pcb.reset_index(drop=TRUE)
 df_sentec = df_sentec.reset_index(drop=TRUE)
 print("\n\nDataframe PCB without NaN rows:")
-print(df)
+print(df_pcb)
 # print(type(df["28_01"][0]))
+
 
 '''
 ---------------------------------------------------------------------------------
 DATA MERGE
 
-In the following section dataframes are imported and prepared for data analysis.
+In the following section dataframes are merged
 ---------------------------------------------------------------------------------
 '''
 # Summing values row by row
@@ -93,21 +95,25 @@ Data_matrix = []
 Data_matrix_sentec = []
 Data_matrix_no_offset = []
 Data_matrix_no_offset_sentec = []
-rows = len(df.index)
-columns = len(df.columns)
+rows = len(df_pcb.index)
+columns = len(df_pcb.columns)
 # print(columns)
 
-for i in range(0, len(df.columns), 1):
-    append = df.iloc[:, i].values
+for i in range(0, len(df_pcb.columns), 1):
+    append = df_pcb.iloc[:, i].values
     Data_matrix.append(append)
     Data_matrix_sentec.append(df_sentec.iloc[:, i].values)
 print("\n\nData matrix PCB: ")
 print(Data_matrix)
+# print("\n\nData matrix Sentec: ")
+# print(Data_matrix_sentec)
 
 # Generation of arrays corresponding to columns, subtraction of the baseline and deltas computation
 Data_matrix_no_offset = Data_matrix
 Data_matrix_no_offset_sentec = Data_matrix_sentec
+print("\n\n")
 print(Data_matrix_no_offset[0])
+print("\n\nColumns of data matrix: ")
 print(len(Data_matrix_no_offset))  # numbers of columns
 delta_PCB = []
 delta_sentec = []
@@ -115,8 +121,10 @@ support_PCB = []
 support_sentec = []
 for i in range(0, len(Data_matrix_no_offset), 1):
     # support.append(Data_matrix_no_offset[i].astype(float))
+
     # conversion of data_matrix column into array of float
     support_PCB = Data_matrix_no_offset[i].astype(float)
+
     # baseline subrtaction from array
     support_PCB = support_PCB - baseline_arr_PCB[i]
     # print(support_PCB)
@@ -124,10 +132,11 @@ for i in range(0, len(Data_matrix_no_offset), 1):
     delta_PCB.append(
         round(max(support_PCB[(int(index_start_rebreathing)-offset-1):-1]), 2))
     support_sentec = Data_matrix_no_offset_sentec[i].astype(float)
+
     # baseline subrtaction from array
     support_sentec = support_sentec - baseline_arr_sentec[i]
-    print(support_sentec)
-    print(max(support_sentec[(int(index_start_rebreathing)-offset-1):-1]))
+    # print(support_sentec)
+    # print(max(support_sentec[(int(index_start_rebreathing)-offset-1):-1]))
     delta_sentec.append(
         round(max(support_sentec[(int(index_start_rebreathing)-offset-1):-1]), 2))
 
@@ -139,33 +148,52 @@ print(delta_sentec)
 print("------------------------------------------------------------------------------------")
 
 # Generation of a unique array for aggregated analysis
-arr_sum = []
-partial_total = 0
+arr_sum_device = []
+arr_sum_sentec = []
+partial_total_device = 0
+partial_total_sentec = 0
 
 for j in range(0, rows, 1):
     for i in range(0, columns, 1):
-        partial_total += round(float(Data_matrix[i][j]), 2)
+        partial_total_device += round(float(Data_matrix[i][j]), 2)
+        partial_total_sentec += round(float(Data_matrix_sentec[i][j]), 2)
+
     # print(Data_matrix[i][j])
-    arr_sum.append(partial_total/columns)
-    partial_total = 0
+    arr_sum_device.append(round(partial_total_device/columns, 2))
+    arr_sum_sentec.append(round(partial_total_sentec/columns, 2))
+    partial_total_device = 0
+    partial_total_sentec = 0
 
 print("\n\nArray of the sum:")
-print(arr_sum)
+print(arr_sum_device)
+print(arr_sum_sentec)
 
 print("\n\nNumber of array elements:")
-print(len(arr_sum))
+print(len(arr_sum_device))
+print(len(arr_sum_sentec))
 
 # Plot with mean values (no standard deviation)
+plt.figure(0)
+y1 = arr_sum_sentec
+x1 = range(0, len(arr_sum_sentec), 1)
+plt.title("MEDIAN VALUES - Sentec Device Lobe data")
+plt.plot(x1, y1, '.-', color="red", linewidth='1',)
+plt.xlabel('Sample Number')
+plt.ylabel('Measured value [mmHg]')
+plt.grid(axis='y')
+plt.axvline(x=index_start_rebreathing-offset)
+plt.legend(['Median values', 'Start rebreathing'], loc="upper left")
+
 plt.figure(1)
-y1 = arr_sum
-x1 = range(0, len(arr_sum), 1)
-plt.title("MEAN VALUES - PCB Device Lobe data")
+y1 = arr_sum_device
+x1 = range(0, len(arr_sum_device), 1)
+plt.title("MEDIAN VALUES - PCB Device Lobe data")
 plt.plot(x1, y1, '.-', color="red", linewidth='1',)
 plt.xlabel('Sample Number')
 plt.ylabel('Measured value [ppm]')
 plt.grid(axis='y')
 plt.axvline(x=index_start_rebreathing-offset)
-plt.legend(['Average values', 'Start rebreathing'], loc="upper left")
+plt.legend(['Median values', 'Start rebreathing'], loc="upper left")
 
 # Standard deviation computation
 arr_row = []
@@ -201,11 +229,42 @@ plt.text(30, 1010, "Average Standard Deviation = %s ppm" %
 plt.axvline(x=index_start_rebreathing-offset)
 plt.legend(['Start rebreathing', 'Average values and std'], loc="upper left")
 
-# Plot with couples of delta values
+# Plot with couples of delta values - for correlation
 plt.figure(3)
 plt.title("Sentec - PCB device correlation analysis")
 plt.xlabel('Sentec measured CO2 [mmHg]')
 plt.ylabel('PCB device measured [ppm]')
 plt.plot(delta_sentec, delta_PCB, 'o', color="blue")
 
+
+'''
+---------------------------------------------------------------------------------
+BOXPLOT
+
+In the following section boxplots of PCB device data are generated
+---------------------------------------------------------------------------------
+'''
+partial_data_for_boxplot = []
+data_for_boxplot = []
+for j in range(0, rows, 1):
+    for i in range(0, columns, 1):
+        partial_data_for_boxplot.append(round(float(Data_matrix[i][j]), 2))
+    data_for_boxplot.append(partial_data_for_boxplot)
+    print(partial_data_for_boxplot)
+    partial_data_for_boxplot = []
+
+print("\n\nData for boxplot (dataframe's rows extracted):")
+print(data_for_boxplot)
+
+plt.figure(4)
+plt.title("PCB Device Lobe boxplot")
+plt.xlabel('Sample number')
+plt.ylabel('Measured value [ppm]')
+plt.grid(axis='y')
+plt.axvline(x=index_start_rebreathing-offset)
+plt.legend(['Start Rebreathing', 'Start rebreathing'], loc="upper left")
+plt.boxplot(data_for_boxplot)
+
+
+plt.figure(5)
 plt.show()
