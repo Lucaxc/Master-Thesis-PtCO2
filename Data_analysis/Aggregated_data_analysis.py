@@ -35,13 +35,13 @@ DATAFRAME IMPORT
 In the following section dataframes are imported and prepared for data analysis.
 ---------------------------------------------------------------------------------
 '''
-df_pcb = pd.read_csv('CO2_df_30_median_p.csv', sep=";")
-df_sentec = pd.read_csv('Sentec_df_30_median_p.csv', sep=";")
+df_pcb = pd.read_csv('CO2_df_30_median_L.csv', sep=";")
+df_sentec = pd.read_csv('Sentec_df_30_median_L.csv', sep=";")
 print("\n\nDataframe PCB with START:")
 print(df_pcb)
 
 # Rebreathing index identification
-index_start_rebreathing = df_pcb[df_pcb["28_01P"] == "START"].index.values
+index_start_rebreathing = df_pcb[df_pcb["28_01L"] == "START"].index.values
 print("\nIndex start rebreathing: ")
 print(index_start_rebreathing)
 
@@ -204,7 +204,7 @@ print(len(arr_sum_sentec_delta))
 plt.figure(0)
 y1 = arr_sum_sentec
 x1 = range(0, len(arr_sum_sentec), 1)
-plt.title("MEDIAN VALUES - Sentec Device Forearm data")
+plt.title("MEDIAN VALUES - Sentec Device Lobe data")
 plt.plot(x1, y1, '.-', color="red", linewidth='1',)
 plt.xlabel('Sample Number')
 plt.ylabel('Measured value [mmHg]')
@@ -215,7 +215,7 @@ plt.legend(['Median values', 'Start rebreathing'], loc="upper left")
 plt.figure(1)
 y1 = arr_sum_sentec_delta
 x1 = range(0, len(arr_sum_sentec_delta), 1)
-plt.title("DELTA MEDIAN VALUES - Sentec Device Forearm data")
+plt.title("DELTA MEDIAN VALUES - Sentec Device Lobe data")
 plt.plot(x1, y1, '.-', color="red", linewidth='1',)
 plt.xlabel('Sample Number')
 plt.ylabel('Measured value [mmHg]')
@@ -226,7 +226,7 @@ plt.legend(['Median values', 'Start rebreathing'], loc="upper left")
 plt.figure(2)
 y1 = arr_sum_device_delta
 x1 = range(0, len(arr_sum_device_delta), 1)
-plt.title("DELTA MEDIAN VALUES - PCB Device Forearm data")
+plt.title("DELTA MEDIAN VALUES - PCB Device Lobe data")
 plt.plot(x1, y1, '.-', color="red", linewidth='1',)
 plt.xlabel('Sample Number')
 plt.ylabel('Measured value [ppm]')
@@ -238,7 +238,7 @@ plt.legend(['Median values', 'Start rebreathing'], loc="upper left")
 plt.figure(3)
 y1 = arr_sum_device
 x1 = range(0, len(arr_sum_device), 1)
-plt.title("MEDIAN VALUES - PCB Device Forearm data")
+plt.title("MEDIAN VALUES - PCB Device Lobe data")
 plt.plot(x1, y1, '.-', color="red", linewidth='1',)
 plt.xlabel('Sample Number')
 plt.ylabel('Measured value [ppm]')
@@ -269,7 +269,7 @@ print("\n\nAverage std: %s" % average_std)
 
 # Plot with standard deviation
 plt.figure(4)
-plt.title("Mean values and Standard deviation - PCB Device Forearm data")
+plt.title("Mean values and Standard deviation - PCB Device Lobe data")
 plt.errorbar(x1, y1, std_arr, color='blue',
              fmt='-*', ecolor="red", elinewidth=0.5)
 plt.xlabel('Sample Number')
@@ -295,26 +295,96 @@ BOXPLOT
 In the following section boxplots of PCB device data are generated
 ---------------------------------------------------------------------------------
 '''
+# Device variables
 partial_data_for_boxplot = []
+partial_data_for_boxplot_delta = []
 data_for_boxplot = []
+data_for_boxplot_delta = []
+
+# Sentec Variables
+S_partial_data_for_boxplot = []
+S_partial_data_for_boxplot_delta = []
+S_data_for_boxplot = []
+S_data_for_boxplot_delta = []
 for j in range(0, rows, 1):
     for i in range(0, columns, 1):
         partial_data_for_boxplot.append(round(float(Data_matrix[i][j]), 2))
-    data_for_boxplot.append(partial_data_for_boxplot)
-    print(partial_data_for_boxplot)
-    partial_data_for_boxplot = []
+        partial_data_for_boxplot_delta.append(
+            round(float(delta_matrix_pcb[i][j]), 2))
+        S_partial_data_for_boxplot.append(
+            round(float(Data_matrix_sentec[i][j]), 2))
+        S_partial_data_for_boxplot_delta.append(
+            round(float(delta_matrix_sentec[i][j]), 2))
 
-print("\n\nData for boxplot (dataframe's rows extracted):")
-print(data_for_boxplot)
+    data_for_boxplot.append(partial_data_for_boxplot)
+    data_for_boxplot_delta.append(partial_data_for_boxplot_delta)
+    # print(partial_data_for_boxplot_delta)
+    partial_data_for_boxplot = []
+    partial_data_for_boxplot_delta = []
+
+    S_data_for_boxplot.append(S_partial_data_for_boxplot)
+    S_data_for_boxplot_delta.append(S_partial_data_for_boxplot_delta)
+    # print(S_partial_data_for_boxplot_delta)
+    S_partial_data_for_boxplot = []
+    S_partial_data_for_boxplot_delta = []
+
+
+#print("\n\nData for boxplot (dataframe's rows extracted):")
+# print(data_for_boxplot)
 
 plt.figure(6)
-plt.title("PCB Device Forearm boxplot")
+plt.title("PCB Device Lobe boxplot")
 plt.xlabel('Sample number')
 plt.ylabel('Measured value [ppm]')
 plt.grid(axis='y')
-plt.axvline(x=index_start_rebreathing-offset-1)
+plt.axvline(x=index_start_rebreathing-offset)
 plt.legend(['Start Rebreathing', 'Start rebreathing'], loc="upper left")
 plt.boxplot(data_for_boxplot)
 
+plt.figure(7)
+plt.title("PCB Device Lobe boxplot - Delta values")
+plt.xlabel('Sample number')
+plt.ylabel('Measured value [ppm]')
+plt.grid(axis='y')
+# here there isn't the -1 because boxplot index starts from 1 and not 0
+plt.axvline(x=index_start_rebreathing-offset)
+plt.legend(['Start Rebreathing', 'Start rebreathing'], loc="upper left")
+plt.boxplot(data_for_boxplot_delta, patch_artist=True)
+
+plt.figure(8)
+plt.title("Sentec Device Lobe boxplot")
+plt.xlabel('Sample number')
+plt.ylabel('Measured value [mmHg]')
+plt.grid(axis='y')
+plt.axvline(x=index_start_rebreathing-offset)
+plt.legend(['Start Rebreathing', 'Start rebreathing'], loc="upper left")
+plt.boxplot(S_data_for_boxplot)
+
+plt.figure(9)
+plt.title("Sentec Device Lobe boxplot - Delta values")
+plt.xlabel('Sample number')
+plt.ylabel('Measured value [mmHg]')
+plt.grid(axis='y')
+# here there isn't the -1 because boxplot index starts from 1 and not 0
+plt.axvline(x=index_start_rebreathing-offset)
+plt.legend(['Start Rebreathing', 'Start rebreathing'], loc="upper left")
+plt.boxplot(S_data_for_boxplot_delta, patch_artist=True)
+
+# Aggregated plot
+fig, ax1 = plt.subplots()
+ax2 = ax1.twinx()
+ax1.boxplot(data_for_boxplot_delta, patch_artist=True)
+ax2.boxplot(S_data_for_boxplot_delta)
+plt.title("PCB Device and Sentec Lobe boxplot comparison - Delta values")
+plt.xlabel('Sample number')
+ax2.set_ylabel('Sentec Delta [mmHg]', color='tab:orange')
+ax1.set_ylabel('PCB Device Delta [ppm]', color='tab:blue')
+ax1.grid(axis='y')
+# ax2.grid(axis='y')
+# here there isn't the -1 because boxplot index starts from 1 and not 0
+plt.axvline(x=index_start_rebreathing-offset)
+#plt.legend(['Start Rebreathing', 'Start rebreathing'], loc="upper left")
+#plt.boxplot(data_for_boxplot_delta, patch_artist=True)
+#plt.boxplot(S_data_for_boxplot_delta, patch_artist=True)
 
 plt.show()
