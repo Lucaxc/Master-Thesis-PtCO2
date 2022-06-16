@@ -23,6 +23,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import statistics as stat
 from sklearn import preprocessing
+from scipy import stats
 
 # Importing dataframe
 print("-------------------------------------------------------------------------")
@@ -480,15 +481,30 @@ ax1.boxplot(data_for_boxplot_delta, patch_artist=True, boxprops=dict(facecolor='
 ax2.boxplot(S_data_for_boxplot_delta, patch_artist=True, boxprops=dict(facecolor='forestgreen', color='black'),
             medianprops=dict(color='orange'))
 plt.title("PCB Device and Sentec Lobe boxplot comparison - Delta values")
-plt.xlabel('Sample number')
 ax2.set_ylabel('Sentec Delta [mmHg]', color='tab:green')
 ax1.set_ylabel('PCB Device Delta [ppm]', color='tab:blue')
 ax1.grid(axis='y')
 # ax2.grid(axis='y')
 # here there isn't the -1 because boxplot index starts from 1 and not 0
 plt.axvline(x=index_start_rebreathing-offset)
+plt.xlabel('Sample number')
 #plt.legend(['Start Rebreathing', 'Start rebreathing'], loc="upper left")
 #plt.boxplot(data_for_boxplot_delta, patch_artist=True)
 #plt.boxplot(S_data_for_boxplot_delta, patch_artist=True)
 
 plt.show()
+
+
+'''
+---------------------------------------------------------------------------------
+STATISTICAL ANALYSIS
+
+In the following section statistical analysis are performed on the dataframe.
+
+- Kruskal Wallis repetability test for non parametric distributions
+- Anova test for detectability/sensitivity
+---------------------------------------------------------------------------------
+'''
+#################################################################################
+#                               KRUSKAL WALLIS                                  #
+#################################################################################
