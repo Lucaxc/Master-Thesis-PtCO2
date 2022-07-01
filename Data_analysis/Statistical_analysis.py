@@ -4,7 +4,7 @@
 
 Author: Luca Colombo, MSc Student in Biomedical Engineering - Technologies for Electronics
 
-This script is used to perform statistical analysis on data retrieved from  script named
+This script is used to perform statistical analysis on data retrieved from script named
 <Aggreagated_data_analysis>.
 
 \Parameters:
@@ -13,13 +13,14 @@ This script is used to perform statistical analysis on data retrieved from  scri
             processing both for PCB device data and Sentec device data
 
 
-In the following section statistical analysis are performed on the dataframe.
+In the following section dataframe is imported and statistical analysis are performed:
 
 - Kruskal Wallis repetability test for non parametric distributions
 - Anova test for detectability/sensitivity
 ------------------------------------------------------------------------------------------
 '''
 
+from distutils.command import check
 from functools import partial
 from pickle import FALSE, TRUE
 from turtle import color
@@ -246,6 +247,205 @@ print(len(arr_sum_device_normalized))
 print(len(arr_sum_sentec_normalized))
 
 
-#################################################################################
-#                               KRUSKAL WALLIS                                  #
-#################################################################################
+'''
+---------------------------------------------------------------------------------
+KRUSKAL WALLIS
+
+Considering a specific time instant, LOBE data from all the subjects are used to 
+create the first array, then FOREARM data from all the subjects are used to 
+create the second array.
+
+In the end, Kruskal Wallis test is performed on the two arrays, iteratively 
+for all the time instants of the experimental trial.
+
+---------------------------------------------------------------------------------
+'''
+
+complete_row_pcb = []
+complete_row_sentec = []
+lobe_row_pcb = []
+lobe_row_sentec = []
+forearm_row_pcb = []
+forearm_row_sentec = []
+
+KruWal_pcb = []
+KruWal_sentec = []
+result_KW_pcb = 0
+result_KW_sentec = 0
+
+check_baseline_count = 0
+
+# Extraction of complete rows and columns associated to lobe and forearm data
+for j in range(0, rows, 1):
+
+    lobe_row_pcb = []
+    lobe_row_sentec = []
+    forearm_row_pcb = []
+    forearm_row_sentec = []
+    check_baseline_count = 0
+
+    for i in range(0, columns, 1):
+        complete_row_pcb.append(delta_matrix_pcb[i][j])
+        complete_row_sentec.append(delta_matrix_sentec[i][j])
+        if(i % 2 == 0 or i == 0):
+            lobe_row_pcb.append(delta_matrix_pcb[i][j])
+            lobe_row_sentec.append(delta_matrix_sentec[i][j])
+        else:
+            forearm_row_pcb.append(delta_matrix_pcb[i][j])
+            forearm_row_sentec.append(delta_matrix_sentec[i][j])
+
+    # Check if the baseline array [0, 0, ..., 0] is met. In this case no KW test is performed
+    for k in range(0, len(lobe_row_pcb), 1):
+        if(lobe_row_pcb[k] == 0):
+            check_baseline_count += 1
+
+    if(check_baseline_count < len(lobe_row_pcb)):
+        result_KW_pcb = stats.kruskal(lobe_row_pcb, forearm_row_pcb)
+        result_KW_sentec = stats.kruskal(lobe_row_sentec, forearm_row_sentec)
+        KruWal_pcb.append(result_KW_pcb)
+        KruWal_sentec.append(result_KW_sentec)
+
+#print("\n\nKruskal Wallis results DEVICE:")
+# print(KruWal_pcb)
+print("\n\nLength Kruskal Wallis results DEVICE:")
+print(len(KruWal_pcb))
+#print("\n\nKruskal Wallis results SENTEC:")
+# print(KruWal_sentec)
+
+KW_df_pcb = pd.DataFrame(KruWal_pcb)
+KW_df_sentec = pd.DataFrame(KruWal_sentec)
+print(KW_df_pcb)
+
+plt.figure(0)
+y1 = KW_df_pcb['pvalue']
+x1 = range(0, len(KruWal_pcb), 1)
+plt.title("Kruskal Wallis P-value - PCB device")
+plt.plot(x1, y1, 'x-', color="orange", linewidth='2',)
+plt.xlabel('Sample Number')
+plt.ylabel('pvalue')
+plt.grid(axis='y')
+plt.axvline(x=index_start_rebreathing-offset-1, color='gold')
+plt.axvline(x=index_start_rebreathing-offset+3, color='coral')
+plt.legend(['pvalues', 'Start rebreathing',
+           'End rebreathing'], loc="upper left")
+
+plt.figure(1)
+y1 = KW_df_sentec['pvalue']
+x1 = range(0, len(KruWal_pcb), 1)
+plt.title("Kruskal Wallis P-value - Sentec device")
+plt.plot(x1, y1, 'x-', color="blueviolet", linewidth='2',)
+plt.xlabel('Sample Number')
+plt.ylabel('pvalue')
+plt.grid(axis='y')
+plt.axvline(x=index_start_rebreathing-offset-1, color='gold')
+plt.axvline(x=index_start_rebreathing-offset+3, color='coral')
+plt.legend(['pvalues', 'Start rebreathing',
+           'End rebreathing'], loc="upper left")
+
+plt.figure(2)
+y1 = KW_df_pcb['pvalue']
+y2 = KW_df_sentec['pvalue']
+x1 = range(0, len(KruWal_pcb), 1)
+plt.title("Kruskal Wallis P-value - Comparison")
+plt.plot(x1, y1, 'x-', color="orange", linewidth='2',)
+plt.plot(x1, y2, 'o-', color="blueviolet", linewidth='2',)
+plt.xlabel('Sample Number')
+plt.ylabel('pvalue')
+plt.grid(axis='y')
+plt.axvline(x=index_start_rebreathing-offset-1, color='gold')
+plt.axvline(x=index_start_rebreathing-offset+3, color='coral')
+plt.legend(['PCB device', 'Sentec device',
+           'Start rebreathing', 'End rebreathing'], loc="upper left")
+
+
+'''
+---------------------------------------------------------------------------------
+ANOVA
+
+Considering a specific time instant, LOBE data from all the subjects are used to 
+create the first array, then FOREARM data from all the subjects are used to 
+create the second array.
+
+In the end, Kruskal Wallis test is performed on the two arrays, iteratively 
+for all the time instants of the experimental trial.
+
+---------------------------------------------------------------------------------
+'''
+
+###
+
+
+'''
+---------------------------------------------------------------------------------
+FRIEDMAN
+
+It is the non parametric alternative to the repeated measurements ANOVA.
+Considering two specific time instants, LOBE data from all the subjects are used to 
+create the first array, then FOREARM data from all the subjects are used to 
+create the second array.
+
+In the end, Friedman test is performed on the two arrays, iteratively 
+for all the couples of time instants for all the data.
+
+Null Hypothesis (H0): the mean for each time instant is equal.
+Alternative Hypothesis (H1): at least one population mean is different from the rest.
+
+If the pvalue < 0.05, we can reject the null Hypothesis (H0).
+
+---------------------------------------------------------------------------------
+'''
+complete_row_pcb = []
+complete_row_sentec = []
+lobe_row_pcb = []
+lobe_row_sentec = []
+forearm_row_pcb = []
+forearm_row_sentec = []
+
+Friedman_pcb = []
+Friedman_sentec = []
+result_FR_pcb = 0
+result_FR_sentec = 0
+
+check_baseline_count = 0
+
+# Extraction of complete rows and columns associated to lobe and forearm data
+for j in range(0, rows, 1):
+
+    lobe_row_pcb = []
+    lobe_row_sentec = []
+    forearm_row_pcb = []
+    forearm_row_sentec = []
+    check_baseline_count = 0
+
+    for i in range(0, columns, 1):
+        complete_row_pcb.append(delta_matrix_pcb[i][j])
+        complete_row_sentec.append(delta_matrix_sentec[i][j])
+        if(i % 2 == 0 or i == 0):
+            lobe_row_pcb.append(delta_matrix_pcb[i][j])
+            lobe_row_sentec.append(delta_matrix_sentec[i][j])
+        else:
+            forearm_row_pcb.append(delta_matrix_pcb[i][j])
+            forearm_row_sentec.append(delta_matrix_sentec[i][j])
+
+    # Check if the baseline array [0, 0, ..., 0] is met. In this case no KW test is performed
+    for i in range(0, columns, 1):
+        complete_row_pcb.append(delta_matrix_pcb[i][j+1])
+        complete_row_sentec.append(delta_matrix_sentec[i][j+1])
+        if(i % 2 == 0 or i == 0):
+            lobe_row_pcb.append(delta_matrix_pcb[i][j+1])
+            lobe_row_sentec.append(delta_matrix_sentec[i][j+1])
+        else:
+            forearm_row_pcb.append(delta_matrix_pcb[i][j+1])
+            forearm_row_sentec.append(delta_matrix_sentec[i][j+1])
+
+#print("\n\nKruskal Wallis results DEVICE:")
+# print(KruWal_pcb)
+print("\n\nLength Friedman results DEVICE:")
+print(len(Friedman_pcb))
+
+FR_df_pcb = pd.DataFrame(Friedman_pcb)
+FR_df_sentec = pd.DataFrame(Friedman_sentec)
+print(FR_df_pcb)
+
+
+plt.show()
