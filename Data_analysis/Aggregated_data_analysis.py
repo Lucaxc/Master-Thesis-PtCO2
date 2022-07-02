@@ -25,6 +25,7 @@ import statistics as stat
 from sklearn import preprocessing
 from scipy import stats
 import math
+import scipy
 
 # Importing dataframe
 print("-------------------------------------------------------------------------")
@@ -41,8 +42,8 @@ Dataframes to be considered are separately for lobe and forearm.
 Merge dataset is used for statistical analysis in a related script
 ---------------------------------------------------------------------------------
 '''
-df_pcb = pd.read_csv('CO2_df_30_median_L.csv', sep=";")
-df_sentec = pd.read_csv('Sentec_df_30_median_L.csv', sep=";")
+df_pcb = pd.read_csv('CO2_df_10_median_L.csv', sep=";")
+df_sentec = pd.read_csv('Sentec_df_10_median_L.csv', sep=";")
 print("\n\nDataframe PCB with START:")
 print(df_pcb)
 
@@ -159,7 +160,7 @@ for i in range(0, len(Data_matrix_no_offset), 1):
     # print(max(support_sentec[(int(index_start_rebreathing)-offset-1):-1]))
     delta_sentec.append(
         round(max(support_sentec[(int(index_start_rebreathing)-offset-1):-1]), 2))
-
+'''
 print("\n\n------------------------------------------------------------------------------------")
 print("\n\nMatrix of delta PCB:")
 print(delta_matrix_pcb)
@@ -176,7 +177,7 @@ print(delta_PCB)
 print("\nSentec Delta values from baseline: ")
 print(delta_sentec)
 print("------------------------------------------------------------------------------------")
-
+'''
 # Generation of a unique array for aggregated analysis
 arr_sum_device = []
 arr_sum_sentec = []
@@ -217,7 +218,7 @@ for j in range(0, rows, 1):
     partial_total_device_normalized = 0
     partial_total_sentec_normalized = 0
 
-
+'''
 print("\n\nArray of the sum:")
 print(arr_sum_device)
 print(arr_sum_sentec)
@@ -241,6 +242,7 @@ print(len(arr_sum_sentec_delta))
 print("\n\nNumber of array elements normalized:")
 print(len(arr_sum_device_normalized))
 print(len(arr_sum_sentec_normalized))
+'''
 
 # Plot with mean values (no standard deviation)
 plt.figure(0)
@@ -522,7 +524,9 @@ plt.xlabel('Sample number')
 INTERPOLATION
 
 In the following section an exponential fitting is performed on PCB device
-data
+data.
+
+Representative data are from subject SO3, 9-02-2022.
 
 The plots to be drawn are 3:
     - Stimolus
@@ -530,40 +534,50 @@ The plots to be drawn are 3:
     - Sentec device response
 ---------------------------------------------------------------------------------
 '''
+
+# PLOT OF THE STIMULUS
 exp_x1 = []
 exp_y1 = []
 exp_x2 = []
 exp_y2 = []
 x_axis = []
 x_axis2 = []
-interval_duration = 40
-tau = 5
-amplitude = 10.0
+interval_duration = 12
+tau = 2.5
+amplitude = 5.0
 plateau = 0
 
+# To detach from y axis
 for i in range(0, 10, 1):
-    exp_y1.append(0)
+    exp_y1.append(40)
 
+# Physiological delay
+for i in range(0, 5, 1):
+    exp_y1.append(40)
+
+count = 0
+# Stimulus Exponential function construction
 for i in np.arange(0, interval_duration, 1):
     x_axis.append(i)
-    partial_exp_y = float(amplitude*(1 - math.exp(-i/tau)))
+    partial_exp_y = float(amplitude*(1 - np.exp(-i/tau))) + 40
     # print(i)
     # print(partial_exp_y)
-    if(partial_exp_y < amplitude-0.5):
+    if(partial_exp_y < 40 + amplitude-0.5):
         exp_y1.append(partial_exp_y)
-        plateau = partial_exp_y
+        count = count + 1
+        plateau = partial_exp_y - 40
 
-for i in range(0, int(interval_duration*(1/1)-len(exp_y1)), 1):
-    exp_y1.append(plateau)
+for i in range(0, int(interval_duration-count-1), 1):
+    exp_y1.append(plateau + 40)
 
 for i in np.arange(0, interval_duration, 1):
     x_axis2.append(i)
-    partial_exp_y = float(plateau*(math.exp(-i/(tau/2))))
-    if(partial_exp_y > 0.01):
+    partial_exp_y = float(plateau*(np.exp(-i/(tau/2)))) + 40
+    if(partial_exp_y > 40 + 0.01):
         exp_y2.append(partial_exp_y)
 
 for i in range(0, int(interval_duration*(1/1)-len(exp_y2)), 1):
-    exp_y2.append(0)
+    exp_y2.append(40)
 
 # print(exp_y2)
 len_x_axis = len(x_axis)
@@ -576,20 +590,132 @@ for i in range(0, len(exp_y2), 1):
     exp_y1.append(exp_y2[i])
 
 print(exp_y1)
-'''
-x_axis = np.concatenate(x_axis, x_axis2, dtype=float)
-exp_y1 = np.concatenate(exp_y1, exp_y2, dtype=float)
-print(x_axis)
-print(exp_y1)
-'''
 
+# INTERPOLATION FUNCTION
+# Exctraction of x and y representative data
+y_repr_pcb = []
+y_repr_sentec = []
+y_repr_sentec = Data_matrix_sentec[1]
+y_repr_pcb = Data_matrix[1]
 
-plt.figure(15)
+print("\nData from SO3:")
+print(y_repr_pcb)
+y_repr_pcb = []
+y_repr_sentec = []
+for i in range(int(index_start_rebreathing-offset), len(Data_matrix[1]), 1):
+    y_repr_pcb.append(float(Data_matrix[1][i]))
+    y_repr_sentec.append(float(Data_matrix_sentec[1][i]))
+
+print("\nData from SO3 after start rebreathing:")
+print(y_repr_pcb)
+
+print("\nLength of the array from START REBREATHING:")
+print(len(y_repr_pcb))  # 79
+
+# CREATION OF THE ARRAYS FOR OVERLAPPED PLOTS
+arr_y_pcb = []
+arr_y_sentec = []
+
+for i in range(0, 10, 1):
+    arr_y_pcb.append(y_repr_pcb[0])
+    arr_y_sentec.append(y_repr_sentec[0])
+
+for i in range(0, len(y_repr_pcb), 1):
+    arr_y_pcb.append(y_repr_pcb[i])
+    arr_y_sentec.append(y_repr_sentec[i])
+
+print("\nArray PCB for piled plots:")
+print(arr_y_pcb)
+print("\nArray Sentec for piled plots:")
+print(arr_y_sentec)
+
+print("\nLength of the Sentec and PCB arrays (overall):")
+print(len(arr_y_pcb))  # 89
+print("\nLength of the stimulus array (overall):")
+print(len(exp_y1))
+
+for i in range(0, len(arr_y_pcb) - len(exp_y1), 1):
+    exp_y1.append(40)
+
+x_axis_stimulus = range(0, len(arr_y_pcb), 1)
+x_repr_pcb = range(0, len(arr_y_pcb), 1)
+x_repr_sentec = range(0, len(arr_y_pcb), 1)
+
+# We need to place the start of the rebreathing procedure 10 samples after. Then the physiological delay 5 samples after
+fig15 = plt.figure(15)
 plt.title("Provided stimulus")
-plt.plot(x_axis, exp_y1, '.-', color="forestgreen", linewidth='1',)
+plt.plot(x_axis_stimulus, exp_y1, 'k', color="black", linewidth='1',)
+plt.axvline(x=10, color='forestgreen')
+plt.axvline(x=15, color='blue')
 plt.xlabel('Sample Number')
 plt.ylabel('PCO2 [mmHg]')
 plt.grid(axis='y')
-plt.legend(['Stimulus'], loc="upper left")
+plt.legend(['Stimulus', 'Start rebreathing',
+           'Physiological delay'], loc="upper right")
 
-plt.show()
+fig16 = plt.figure(16)
+plt.title("PCB post start rebreathing data")
+plt.plot(x_repr_pcb, arr_y_pcb, 'k', color="black", linewidth='1')
+plt.axvline(x=10, color='forestgreen')
+plt.axvline(x=15, color='blue')
+plt.axvline(x=18, color='red')
+plt.xlabel('Sample Number')
+plt.ylabel('PtCO2 [ppm]')
+plt.grid(axis='y')
+plt.legend(['Stimulus', 'Start rebreathing', 'Physiological delay',
+           'Sensors delay'], loc="lower right")
+
+fig17 = plt.figure(17)
+plt.title("Sentec post start rebreathing data")
+plt.plot(x_repr_sentec, arr_y_sentec, 'k',
+         color="black", linewidth='1',)
+plt.axvline(x=10, color='forestgreen')
+plt.axvline(x=15, color='blue')
+plt.axvline(x=18, color='red')
+plt.xlabel('Sample Number')
+plt.ylabel('PtCO2 [mmHg]')
+plt.grid(axis='y')
+plt.legend(['Stimulus', 'Start rebreathing', 'Physiological delay',
+           'Sensors delay'], loc="upper right")
+
+
+#####################################################################
+#                    Interpolation with curve_fit                   #
+#####################################################################
+x_repr_pcb = []
+for i in range(0, len(y_repr_pcb), 1):
+    x_repr_pcb.append(i + 10)
+
+print(y_repr_pcb)
+print(x_repr_pcb)
+
+p0 = (10, 0.5)  # start with values near those we expect
+params, cv = scipy.optimize.curve_fit(
+    lambda t, B, tau: B*(1 - np.exp(-(t/tau))),  x_repr_pcb,  y_repr_pcb)
+
+print("\nFitting parameters: ")
+print(params)
+print("\nCV fitting: ")
+print(cv)
+
+B = params[0]
+tau = params[1]
+
+x_repr_pcb = range(0, len(arr_y_pcb), 1)
+x_fitted = range(0, len(arr_y_pcb), 1)
+y_fitted = B*(1 - np.exp(x_fitted/tau))
+
+fig18 = plt.figure(18)
+plt.title("PCB post start rebreathing data and fitting")
+plt.plot(x_repr_pcb, arr_y_pcb, '.-', color="black", linewidth='1')
+plt.plot(x_fitted, y_fitted, 'k', label='Fitted curve')
+plt.axvline(x=10, color='forestgreen')
+plt.axvline(x=15, color='blue')
+plt.axvline(x=18, color='red')
+plt.xlabel('Sample Number')
+plt.ylabel('PtCO2 [ppm]')
+plt.grid(axis='y')
+plt.legend(['Stimulus', 'Fitted curve', 'Start rebreathing', 'Physiological delay',
+           'Sensors delay'], loc="lower right")
+
+# plt.show()
