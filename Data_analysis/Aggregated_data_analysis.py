@@ -11,11 +11,14 @@ This script is used to perform statistical analysis on data retrieved from scrip
     @param <filename.csv>: at the beginning of the script change the file name to
             associate the running of the script with the desired CSV file. It includes
             processing both for PCB device data and Sentec device data
+    @param <subject_id>: subject that has to be considered in the exponential fitting 
+            part of the script.
 ------------------------------------------------------------------------------------------
 '''
 
 from functools import partial
 from pickle import FALSE, TRUE
+from re import sub
 from turtle import color
 from unittest.mock import patch
 import pandas as pd
@@ -23,6 +26,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import statistics as stat
 from sklearn import preprocessing
+from sklearn import metrics
 from scipy import stats
 import math
 import scipy
@@ -32,6 +36,7 @@ print("-------------------------------------------------------------------------
 print("------------------------------- New run ---------------------------------")
 print("-------------------------------------------------------------------------")
 
+subject_id = 1
 
 '''
 ---------------------------------------------------------------------------------
@@ -42,13 +47,13 @@ Dataframes to be considered are separately for lobe and forearm.
 Merge dataset is used for statistical analysis in a related script
 ---------------------------------------------------------------------------------
 '''
-df_pcb = pd.read_csv('CO2_df_10_median_L.csv', sep=";")
-df_sentec = pd.read_csv('Sentec_df_10_median_L.csv', sep=";")
+df_pcb = pd.read_csv('CO2_df_10_median_P.csv', sep=";")
+df_sentec = pd.read_csv('Sentec_df_10_median_P.csv', sep=";")
 print("\n\nDataframe PCB with START:")
 print(df_pcb)
 
 # Rebreathing index identification
-index_start_rebreathing = df_pcb[df_pcb["28_01L"] == "START"].index.values
+index_start_rebreathing = df_pcb[df_pcb["28_01P"] == "START"].index.values
 print("\nIndex start rebreathing: ")
 print(index_start_rebreathing)
 
@@ -71,8 +76,8 @@ df_pcb = df_pcb.drop(index_start_rebreathing, axis=0)
 df_pcb = df_pcb.reset_index()
 df_sentec = df_sentec.drop(index_start_rebreathing, axis=0)
 df_sentec = df_sentec.reset_index()
-print("\n\nDataframe PCB without START row:")
-print(df_pcb)
+#print("\n\nDataframe PCB without START row:")
+# print(df_pcb)
 
 # Removing Rows with NaN
 df_pcb = df_pcb.dropna()
@@ -85,8 +90,8 @@ df_pcb.pop('index')
 df_sentec.pop('index')
 df_pcb = df_pcb.reset_index(drop=TRUE)
 df_sentec = df_sentec.reset_index(drop=TRUE)
-print("\n\nDataframe PCB without NaN rows:")
-print(df_pcb)
+#print("\n\nDataframe PCB without NaN rows:")
+# print(df_pcb)
 # print(type(df["28_01"][0]))
 
 
@@ -160,10 +165,11 @@ for i in range(0, len(Data_matrix_no_offset), 1):
     # print(max(support_sentec[(int(index_start_rebreathing)-offset-1):-1]))
     delta_sentec.append(
         round(max(support_sentec[(int(index_start_rebreathing)-offset-1):-1]), 2))
-'''
+
 print("\n\n------------------------------------------------------------------------------------")
 print("\n\nMatrix of delta PCB:")
 print(delta_matrix_pcb)
+'''
 print("\n\nMatrix of delta Sentec:")
 print(delta_matrix_sentec)
 print("\n\n------------------------------------------------------------------------------------")
@@ -521,7 +527,7 @@ plt.xlabel('Sample number')
 
 '''
 ---------------------------------------------------------------------------------
-INTERPOLATION
+INTERPOLATION - RAW VALUES
 
 In the following section an exponential fitting is performed on PCB device
 data.
@@ -532,6 +538,13 @@ The plots to be drawn are 3:
     - Stimolus
     - PCB device response and fitting
     - Sentec device response
+
+PARAMETERS: (in the interpolation section)
+    - @param <delay>: time after the sensors delay in which the curve should
+             be fitted.
+    - @param <gap>: baseline (in the case of raw values) or deviation from the 
+             baseline (in the case of delta values).
+
 ---------------------------------------------------------------------------------
 '''
 
@@ -593,18 +606,23 @@ print(exp_y1)
 
 # INTERPOLATION FUNCTION
 # Exctraction of x and y representative data
+# array that contains all the data from the beginning of the rebreathing maneuver
 y_repr_pcb = []
 y_repr_sentec = []
-y_repr_sentec = Data_matrix_sentec[1]
-y_repr_pcb = Data_matrix[1]
+
+# to check if the selected column is correct
+y_repr_sentec = Data_matrix_sentec[subject_id]
+y_repr_pcb = Data_matrix[subject_id]
 
 print("\nData from SO3:")
 print(y_repr_pcb)
 y_repr_pcb = []
 y_repr_sentec = []
-for i in range(int(index_start_rebreathing-offset), len(Data_matrix[1]), 1):
-    y_repr_pcb.append(float(Data_matrix[1][i]))
-    y_repr_sentec.append(float(Data_matrix_sentec[1][i]))
+
+# filling with post start rebreathing data
+for i in range(int(index_start_rebreathing-offset), len(Data_matrix[subject_id]), 1):
+    y_repr_pcb.append(float(Data_matrix[subject_id][i]))
+    y_repr_sentec.append(float(Data_matrix_sentec[subject_id][i]))
 
 print("\nData from SO3 after start rebreathing:")
 print(y_repr_pcb)
@@ -613,7 +631,7 @@ print("\nLength of the array from START REBREATHING:")
 print(len(y_repr_pcb))  # 79
 
 # CREATION OF THE ARRAYS FOR OVERLAPPED PLOTS
-arr_y_pcb = []
+arr_y_pcb = []  # array that contains all the data from the start of the rebreathing maneuver and the beginning 10 samples of the first value are added
 arr_y_sentec = []
 
 for i in range(0, 10, 1):
@@ -634,10 +652,11 @@ print(len(arr_y_pcb))  # 89
 print("\nLength of the stimulus array (overall):")
 print(len(exp_y1))
 
+# Adding values to the stimulus plot to match the array dimensions
 for i in range(0, len(arr_y_pcb) - len(exp_y1), 1):
     exp_y1.append(40)
 
-x_axis_stimulus = range(0, len(arr_y_pcb), 1)
+x_axis_stimulus = range(0, len(arr_y_pcb), 1)  # for the stimulus plot
 x_repr_pcb = range(0, len(arr_y_pcb), 1)
 x_repr_sentec = range(0, len(arr_y_pcb), 1)
 
@@ -662,7 +681,7 @@ plt.axvline(x=18, color='red')
 plt.xlabel('Sample Number')
 plt.ylabel('PtCO2 [ppm]')
 plt.grid(axis='y')
-plt.legend(['Stimulus', 'Start rebreathing', 'Physiological delay',
+plt.legend(['Raw PCB device data', 'Start rebreathing', 'Physiological delay',
            'Sensors delay'], loc="lower right")
 
 fig17 = plt.figure(17)
@@ -675,23 +694,32 @@ plt.axvline(x=18, color='red')
 plt.xlabel('Sample Number')
 plt.ylabel('PtCO2 [mmHg]')
 plt.grid(axis='y')
-plt.legend(['Stimulus', 'Start rebreathing', 'Physiological delay',
+plt.legend(['Filtered Sentec device data', 'Start rebreathing', 'Physiological delay',
            'Sensors delay'], loc="upper right")
 
 
 #####################################################################
 #                    Interpolation with curve_fit                   #
 #####################################################################
+
+#################### PARAMETERS ####################
+delay = 22
+gap = 825
+####################################################
+
 x_repr_pcb = []
-for i in range(0, len(y_repr_pcb), 1):
-    x_repr_pcb.append(i + 10)
+y_repr_pcb = []
+
+for i in range(delay, len(arr_y_pcb), 1):
+    x_repr_pcb.append(i)
+    y_repr_pcb.append(arr_y_pcb[i])
 
 print(y_repr_pcb)
 print(x_repr_pcb)
 
-p0 = (10, 0.5)  # start with values near those we expect
+p0 = (300, 2)  # start with values near those we expect
 params, cv = scipy.optimize.curve_fit(
-    lambda t, B, tau: B*(1 - np.exp(-(t/tau))),  x_repr_pcb,  y_repr_pcb)
+    lambda t, B, tau: B*(1 - np.exp((-(t-delay)/tau))) + gap,  x_repr_pcb,  y_repr_pcb)
 
 print("\nFitting parameters: ")
 print(params)
@@ -701,21 +729,176 @@ print(cv)
 B = params[0]
 tau = params[1]
 
+x_fitted = []
+y_fitted = []
 x_repr_pcb = range(0, len(arr_y_pcb), 1)
-x_fitted = range(0, len(arr_y_pcb), 1)
-y_fitted = B*(1 - np.exp(x_fitted/tau))
+for i in range(delay, len(arr_y_pcb), 1):
+    x_fitted.append(i)
+    y_fitted.append(B*(1 - np.exp((-1*((x_fitted[i-delay])-delay)/tau))) + gap)
+
+# Goodness of the fitting
+r2_score_value = metrics.r2_score(y_repr_pcb, y_fitted)
+print("\n\n=================================================================")
+print("Fitting Goodness R2: ")
+print(r2_score_value)
+print("=================================================================")
 
 fig18 = plt.figure(18)
 plt.title("PCB post start rebreathing data and fitting")
-plt.plot(x_repr_pcb, arr_y_pcb, '.-', color="black", linewidth='1')
-plt.plot(x_fitted, y_fitted, 'k', label='Fitted curve')
+plt.plot(x_repr_pcb, arr_y_pcb, 'k', color="black", linewidth='1')
+plt.plot(x_fitted, y_fitted, 'm', label='Fitted curve')
 plt.axvline(x=10, color='forestgreen')
 plt.axvline(x=15, color='blue')
 plt.axvline(x=18, color='red')
 plt.xlabel('Sample Number')
 plt.ylabel('PtCO2 [ppm]')
 plt.grid(axis='y')
-plt.legend(['Stimulus', 'Fitted curve', 'Start rebreathing', 'Physiological delay',
+plt.legend(['Raw PCB device data', 'Fitted curve', 'Start rebreathing', 'Physiological delay',
            'Sensors delay'], loc="lower right")
 
-# plt.show()
+
+'''
+---------------------------------------------------------------------------------
+INTERPOLATION - DELTA VALUES
+
+In the following section an exponential fitting is performed on PCB device
+data.
+
+Representative data are from subject SO3, 9-02-2022.
+
+The plots to be drawn are 3:
+    - Stimolus
+    - PCB device response and fitting
+    - Sentec device response
+---------------------------------------------------------------------------------
+'''
+# Exctraction of x and y DELTA representative data
+y_repr_pcb_delta = []
+y_repr_sentec_delta = []
+y_repr_sentec_delta = delta_matrix_sentec[subject_id]
+y_repr_pcb_delta = delta_matrix_pcb[subject_id]
+
+print("\nDelta Data from SO3:")
+print(y_repr_pcb_delta)
+y_repr_pcb_delta = []
+y_repr_sentec_delta = []
+for i in range(int(index_start_rebreathing-offset), len(delta_matrix_pcb[subject_id]), 1):
+    y_repr_pcb_delta.append(float(delta_matrix_pcb[subject_id][i]))
+    y_repr_sentec_delta.append(float(delta_matrix_sentec[subject_id][i]))
+
+print("\nDelta Data from SO3 after start rebreathing:")
+print(y_repr_pcb_delta)
+
+print("\nDelta Length of the array from START REBREATHING:")
+print(len(y_repr_pcb_delta))  # 79
+
+# CREATION OF THE ARRAYS FOR OVERLAPPED PLOTS
+arr_y_pcb_delta = []
+arr_y_sentec_delta = []
+
+for i in range(0, 10, 1):
+    arr_y_pcb_delta.append(y_repr_pcb_delta[0])
+    arr_y_sentec_delta.append(y_repr_sentec_delta[0])
+
+for i in range(0, len(y_repr_pcb_delta), 1):
+    arr_y_pcb_delta.append(y_repr_pcb_delta[i])
+    arr_y_sentec_delta.append(y_repr_sentec_delta[i])
+
+print("\nArray delta PCB for piled plots:")
+print(arr_y_pcb_delta)
+print("\nArray delta Sentec for piled plots:")
+print(arr_y_sentec_delta)
+
+print("\nLength of the delta Sentec and delta PCB arrays (overall):")
+print(len(arr_y_pcb_delta))
+print("\nLength of the stimulus array (overall):")
+print(len(exp_y1))
+
+x_repr_pcb_delta = range(0, len(arr_y_pcb_delta), 1)
+x_repr_sentec_delta = range(0, len(arr_y_pcb_delta), 1)
+
+fig19 = plt.figure(19)
+plt.title("Delta PCB post start rebreathing data")
+plt.plot(x_repr_pcb_delta, arr_y_pcb_delta, 'k', color="black", linewidth='1')
+plt.axvline(x=10, color='forestgreen')
+plt.axvline(x=15, color='blue')
+plt.axvline(x=18, color='red')
+plt.xlabel('Sample Number')
+plt.ylabel('PtCO2 [ppm]')
+plt.grid(axis='y')
+plt.legend(['Raw PCB device data - DELTA', 'Start rebreathing', 'Physiological delay',
+           'Sensors delay'], loc="lower right")
+
+fig20 = plt.figure(20)
+plt.title("Delta Sentec post start rebreathing data")
+plt.plot(x_repr_sentec_delta, arr_y_sentec_delta, 'k',
+         color="black", linewidth='1',)
+plt.axvline(x=10, color='forestgreen')
+plt.axvline(x=15, color='blue')
+plt.axvline(x=18, color='red')
+plt.xlabel('Sample Number')
+plt.ylabel('PtCO2 [mmHg]')
+plt.grid(axis='y')
+plt.legend(['Filtered Sentec device data - DELTA', 'Start rebreathing', 'Physiological delay',
+           'Sensors delay'], loc="upper right")
+
+#####################################################################
+#                    Interpolation with curve_fit                   #
+#####################################################################
+
+#################### PARAMETERS ####################
+delay = 22
+gap = -38
+####################################################
+
+x_repr_pcb_delta = []
+y_repr_pcb_delta = []
+
+for i in range(delay, len(arr_y_pcb_delta), 1):
+    x_repr_pcb_delta.append(i)
+    y_repr_pcb_delta.append(arr_y_pcb_delta[i])
+
+print(y_repr_pcb_delta)
+print(x_repr_pcb_delta)
+
+p0 = (300, 2)  # start with values near those we expect
+params_delta, cv_delta = scipy.optimize.curve_fit(
+    lambda t, B, tau: B*(1 - np.exp((-(t-delay)/tau))) + gap,  x_repr_pcb_delta,  y_repr_pcb_delta)
+
+print("\nFitting parameters DELTA: ")
+print(params_delta)
+print("\nCV fitting DELTA: ")
+print(cv)
+
+B = params_delta[0]
+tau = params_delta[1]
+
+x_fitted_delta = []
+y_fitted_delta = []
+x_repr_pcb_delta = range(0, len(arr_y_pcb_delta), 1)
+for i in range(delay, len(arr_y_pcb_delta), 1):
+    x_fitted_delta.append(i)
+    y_fitted_delta.append(
+        B*(1 - np.exp((-1*((x_fitted_delta[i-delay])-delay)/tau))) + gap)
+
+# Goodness of the fitting
+r2_score_value_delta = metrics.r2_score(y_repr_pcb_delta, y_fitted_delta)
+print("\n\n=================================================================")
+print("Fitting Goodness R2 - delta: ")
+print(r2_score_value_delta)
+print("=================================================================")
+
+fig21 = plt.figure(21)
+plt.title("Delta PCB post start rebreathing data and fitting")
+plt.plot(x_repr_pcb_delta, arr_y_pcb_delta, 'k', color="black", linewidth='1')
+plt.plot(x_fitted_delta, y_fitted_delta, 'm', label='Fitted curve')
+plt.axvline(x=10, color='forestgreen')
+plt.axvline(x=15, color='blue')
+plt.axvline(x=18, color='red')
+plt.xlabel('Sample Number')
+plt.ylabel('PtCO2 [ppm]')
+plt.grid(axis='y')
+plt.legend(['Raw PCB device data - DELTA', 'Fitted curve', 'Start rebreathing', 'Physiological delay',
+           'Sensors delay'], loc="lower right")
+
+plt.show()

@@ -45,8 +45,8 @@ DATAFRAME IMPORT
 In the following section dataframes are imported and prepared for data analysis.
 ---------------------------------------------------------------------------------
 '''
-df_pcb = pd.read_csv('CO2_df_30_median_merged.csv', sep=";")
-df_sentec = pd.read_csv('Sentec_df_30_median_merged.csv', sep=";")
+df_pcb = pd.read_csv('CO2_df_10_median_merged.csv', sep=";")
+df_sentec = pd.read_csv('Sentec_df_10_median_merged.csv', sep=";")
 print("\n\nDataframe PCB with START:")
 print(df_pcb)
 
@@ -167,8 +167,10 @@ for i in range(0, len(Data_matrix_no_offset), 1):
 print("\n\n------------------------------------------------------------------------------------")
 print("\n\nMatrix of delta PCB:")
 print(delta_matrix_pcb)
+'''
 print("\n\nMatrix of delta Sentec:")
 print(delta_matrix_sentec)
+
 print("\n\n------------------------------------------------------------------------------------")
 print("\n\nMatrix of normalized delta PCB:")
 print(delta_matrix_pcb_normalized)
@@ -180,6 +182,7 @@ print(delta_PCB)
 print("\nSentec Delta values from baseline: ")
 print(delta_sentec)
 print("------------------------------------------------------------------------------------")
+'''
 
 # Generation of a unique array for aggregated analysis
 arr_sum_device = []
@@ -221,7 +224,7 @@ for j in range(0, rows, 1):
     partial_total_device_normalized = 0
     partial_total_sentec_normalized = 0
 
-
+'''
 print("\n\nArray of the sum:")
 print(arr_sum_device)
 print(arr_sum_sentec)
@@ -245,11 +248,38 @@ print(len(arr_sum_sentec_delta))
 print("\n\nNumber of array elements normalized:")
 print(len(arr_sum_device_normalized))
 print(len(arr_sum_sentec_normalized))
+'''
+
+'''
+---------------------------------------------------------------------------------
+NORMALITY INSPECTION
+
+Data are analized to investigate if they are normalli distributed.
+    
+    scipy.stats.normaltest(a, axis=0, nan_policy='propagate')
+    Test whether a sample differs from a normal distribution.   
+
+    This function tests the null hypothesis that a sample comes from a normal 
+    distribution. It is based on D’Agostino and Pearson’s [1], [2] test that 
+    combines skew and kurtosis to produce an omnibus test of normality.
+
+    If p-value > 0.05, data come from a normal distribution
+---------------------------------------------------------------------------------
+'''
+pvalues_normality = []
+for i in range(0, len(delta_matrix_pcb), 1):
+    pvalues_normality.append(stats.normaltest(delta_matrix_pcb[i]))
+
+print("\n\nP-values for normality: ")
+normality_pvalue_pcb = pd.DataFrame(pvalues_normality)
+print(normality_pvalue_pcb)
+
+# Since pvalue for normality D'Agostino test is << 0.05, data are not normally distributed
 
 
 '''
 ---------------------------------------------------------------------------------
-KRUSKAL WALLIS
+KRUSKAL WALLIS - Obsolete
 
 Considering a specific time instant, LOBE data from all the subjects are used to 
 create the first array, then FOREARM data from all the subjects are used to 
@@ -260,7 +290,6 @@ for all the time instants of the experimental trial.
 
 ---------------------------------------------------------------------------------
 '''
-
 complete_row_pcb = []
 complete_row_sentec = []
 lobe_row_pcb = []
@@ -360,6 +389,84 @@ plt.legend(['PCB device', 'Sentec device',
 
 '''
 ---------------------------------------------------------------------------------
+WILCOXON MATCHED PAIRS TEST (a.k.a paird t-test for non normal distribution)
+
+Considering a specific subject, LOBE data are compared with FOREARM  for the
+same subject.
+
+In the end, Wilcoxon test is performed on the two arrays, iteratively 
+for all the time instants of the experimental trial.
+
+scipy.stats.wilcoxon(x, y=None, zero_method='wilcox', correction=False, 
+                        alternative='two-sided', mode='auto', *, axis=0,
+                        nan_policy='propagate')
+
+The Wilcoxon signed-rank test tests the null hypothesis that two related paired 
+samples come from the same distribution. In particular, it tests whether the 
+distribution of the differences x - y is symmetric about zero. It is a 
+non-parametric version of the paired T-test.
+
+Hypotesis:
+    - H0: the mean difference between the paired exam scores is zero
+    - H1: the mean difference between the paired exam scores is not zero
+
+If Pvalue < 0.05, H0 has to be rejected and H1 accepted.
+---------------------------------------------------------------------------------
+'''
+lobe_pcb = []
+lobe_sentec = []
+forearm_pcb = []
+forearm_sentec = []
+
+Wilcx_pcb = []
+Wilcx_sentec = []
+result_Wcx_pcb = 0
+result_Wcx_sentec = 0
+
+check_baseline_count = 0
+
+# Extraction of complete rows and columns associated to lobe and forearm data
+for j in range(0, columns, 2):
+    lobe_pcb = []
+    lobe_sentec = []
+    forearm_pcb = []
+    forearm_sentec = []
+
+    check_baseline_count = 0
+
+    for i in range(0, rows, 1):
+        if(i != index_start_rebreathing-offset-1):  # baseline not considered
+            lobe_pcb.append(delta_matrix_pcb[j][i])
+            forearm_pcb.append(delta_matrix_pcb[j+1][i])
+            lobe_sentec.append(delta_matrix_sentec[j][i])
+            forearm_sentec.append(delta_matrix_sentec[j+1][i])
+
+    print(lobe_pcb)
+    print(forearm_pcb)
+    result_Wcx_pcb = stats.wilcoxon(lobe_pcb, forearm_pcb)
+    result_Wcx_sentec = stats.wilcoxon(lobe_sentec, forearm_sentec)
+    Wilcx_pcb.append(result_Wcx_pcb)
+    Wilcx_sentec.append(result_Wcx_sentec)
+
+#print("\n\nKruskal Wallis results DEVICE:")
+# print(KruWal_pcb)
+print("\n\nLength Wilcoxon results DEVICE:")
+print(len(Wilcx_pcb))
+
+# Always greater than 0.05, so the H0 hypothesis has to be accepted
+#print("\n\nKruskal Wallis results SENTEC:")
+# print(KruWal_sentec)
+
+Wcx_df_pcb = pd.DataFrame(Wilcx_pcb)
+Wcx_df_sentec = pd.DataFrame(Wilcx_sentec)
+print(Wcx_df_pcb)
+
+print("\n\nLength Wilcoxon results DEVICE:")
+print(Wcx_df_sentec)
+
+
+'''
+---------------------------------------------------------------------------------
 ANOVA
 
 Considering a specific time instant, LOBE data from all the subjects are used to 
@@ -393,6 +500,7 @@ Alternative Hypothesis (H1): at least one population mean is different from the 
 If the pvalue < 0.05, we can reject the null Hypothesis (H0).
 
 ---------------------------------------------------------------------------------
+'''
 '''
 complete_row_pcb = []
 complete_row_sentec = []
@@ -446,6 +554,6 @@ print(len(Friedman_pcb))
 FR_df_pcb = pd.DataFrame(Friedman_pcb)
 FR_df_sentec = pd.DataFrame(Friedman_sentec)
 print(FR_df_pcb)
-
+'''
 
 plt.show()
