@@ -29,7 +29,7 @@ sample_number = 30
 
 # Dataframe import for aggregate data analysis
 print("------------------------------- New run ---------------------------------")
-df = pd.read_csv('5_07P.csv', sep=";")
+df = pd.read_csv('18_07L.csv', sep=";")
 df.columns = ("Timestamp_CO2", "CO2Sange", "Timestamp_deltaCO2",
               "DeltaCO2", "Sentec", "Rebreathing_mark")
 print(df.head(10))

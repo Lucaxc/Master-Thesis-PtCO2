@@ -19,9 +19,9 @@ DATAFRAME IMPORT
 In the following section dataframes are imported and prepared for data analysis.
 ---------------------------------------------------------------------------------
 '''
-df = pd.read_csv('Data_for_radarplot.csv', sep=";")
-print("\n\nQuestionnairre dataframe:")
-print(df)
+#df = pd.read_csv('Data_for_radarplot.csv', sep=";")
+#print("\n\nQuestionnairre dataframe:")
+# print(df)
 
 categories = ['Q1', 'Q2', 'Q3', 'Q4', 'Q5',
               'Q6', 'Q7', 'Q8', 'Q9', 'Q10']
@@ -29,6 +29,8 @@ categories = ['Q1', 'Q2', 'Q3', 'Q4', 'Q5',
 categories = [*categories, categories[0]]
 
 ideal = [5, 1, 5, 1, 5, 1, 5, 1, 5, 1]
+averages = [4.7, 1.9, 4.3, 1, 4.6, 1.3, 4.1, 2.1, 3.5, 1.1]
+
 arr_S01 = []
 arr_S02 = [5, 3, 4, 1, 4, 2, 3, 4, 4, 1]
 arr_S03 = []
@@ -45,6 +47,7 @@ arr_S13 = []
 arr_S14 = []
 
 ideal = [*ideal, ideal[0]]
+averages = [*averages, averages[0]]
 #arr_S01 = [*arr_S01, arr_S01[0]]
 arr_S02 = [*arr_S02, arr_S02[0]]
 #arr_S03 = [*arr_S03, arr_S03[0]]
@@ -61,8 +64,8 @@ arr_S11 = [*arr_S11, arr_S11[0]]
 #arr_S14 = [*arr_S14, arr_S14[0]]
 
 
-rows = len(df.index)
-print(rows)
+#rows = len(df.index)
+# print(rows)
 
 '''
 support = []
@@ -80,7 +83,7 @@ print(answers)
 
 label_loc = np.linspace(start=0, stop=2 * np.pi, num=len(arr_S02))
 
-plt.figure(1)
+plt.figure(0)
 plt.subplot(polar=True)
 #plt.plot(label_loc, arr_S01, label='S01')
 plt.plot(label_loc, arr_S02, label='S02')
@@ -99,4 +102,13 @@ plt.plot(label_loc, ideal, label='Ideal')
 plt.title('Questonnaire response')
 lines, labels = plt.thetagrids(np.degrees(label_loc), labels=categories)
 # plt.legend(loc='best')
+
+plt.figure(1)
+plt.subplot(polar=True)
+plt.plot(label_loc, ideal, label='Ideal')
+plt.plot(label_loc, averages, label='Averages')
+plt.title('Questonnaire response')
+lines, labels = plt.thetagrids(np.degrees(label_loc), labels=categories)
+plt.legend(loc='best')
+
 plt.show()

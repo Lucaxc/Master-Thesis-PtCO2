@@ -43,17 +43,17 @@ subject_id = 1
 DATAFRAME IMPORT
 
 In the following section dataframes are imported and prepared for data analysis.
-Dataframes to be considered are separately for lobe and forearm.
+Dataframes to be considered are separately for Lobe and forearm.
 Merge dataset is used for statistical analysis in a related script
 ---------------------------------------------------------------------------------
 '''
-df_pcb = pd.read_csv('CO2_df_10_median_P.csv', sep=";")
-df_sentec = pd.read_csv('Sentec_df_10_median_P.csv', sep=";")
+df_pcb = pd.read_csv('CO2_df_10_median_L.csv', sep=";")
+df_sentec = pd.read_csv('Sentec_df_10_median_L.csv', sep=";")
 print("\n\nDataframe PCB with START:")
 print(df_pcb)
 
 # Rebreathing index identification
-index_start_rebreathing = df_pcb[df_pcb["28_01P"] == "START"].index.values
+index_start_rebreathing = df_pcb[df_pcb["28_01L"] == "START"].index.values
 print("\nIndex start rebreathing: ")
 print(index_start_rebreathing)
 
@@ -165,11 +165,10 @@ for i in range(0, len(Data_matrix_no_offset), 1):
     # print(max(support_sentec[(int(index_start_rebreathing)-offset-1):-1]))
     delta_sentec.append(
         round(max(support_sentec[(int(index_start_rebreathing)-offset-1):-1]), 2))
-
+'''
 print("\n\n------------------------------------------------------------------------------------")
 print("\n\nMatrix of delta PCB:")
 print(delta_matrix_pcb)
-'''
 print("\n\nMatrix of delta Sentec:")
 print(delta_matrix_sentec)
 print("\n\n------------------------------------------------------------------------------------")
@@ -250,43 +249,156 @@ print(len(arr_sum_device_normalized))
 print(len(arr_sum_sentec_normalized))
 '''
 
+'''
+#################################################################
+
+#                            30 s                               #
+
+#################################################################
+# X axis time stamp creation
+x_seconds = []
+time_stamp = 45
+for i in range(0, len(arr_sum_sentec), 1):
+    time_stamp += 30
+    x_seconds.append(time_stamp)
+time_stamp = 45
+
+# X axis decimal time stamp creation
+x_seconds_decimal = []
+time_offset_decimal = 1.45
+minutes = 1
+for i in range(0, len(arr_sum_sentec), 1):
+    time_offset_decimal += 0.30
+    if(time_offset_decimal > 0.60 + minutes):
+        minutes += 1
+        time_offset_decimal = time_offset_decimal - 0.60 + 1
+    if(i == index_start_rebreathing-offset-1):
+        index_start_rebreathing_decimal = round(time_offset_decimal, 2)
+
+    if(i == index_start_rebreathing-offset+3):
+        index_end_rebreathing_decimal = round(time_offset_decimal, 2)
+    x_seconds_decimal.append(round(time_offset_decimal, 2))
+time_offset_decimal = 0.45
+print(x_seconds_decimal)
+
+# Time to be displayed on x axis
+gridx = []
+for i in range(0, len(x_seconds_decimal), 1):
+    if(i % 2 == 1):
+        gridx.append(x_seconds_decimal[i])
+
+# To detect where to plot the vertical line when using decimal x axis time stamps
+print(index_start_rebreathing_decimal)
+print(index_end_rebreathing_decimal)
+'''
+#################################################################
+
+#                            10 s                               #
+
+#################################################################
+# X axis time stamp creation
+x_seconds = []
+time_stamp = 70
+for i in range(0, len(arr_sum_sentec), 1):
+    time_stamp += 10
+    x_seconds.append(time_stamp)
+time_stamp = 70
+
+# X axis decimal time stamp creation
+x_seconds_decimal = []
+time_offset_decimal = 1.10
+minutes = 1
+for i in range(0, len(arr_sum_sentec), 1):
+    time_offset_decimal += 0.10
+    if(time_offset_decimal > 0.60 + minutes):
+        minutes += 1
+        time_offset_decimal = time_offset_decimal - 0.60 + 1
+    if(i == index_start_rebreathing-offset-1):
+        index_start_rebreathing_decimal = round(time_offset_decimal, 2)
+
+    if(i == index_start_rebreathing-offset+11):
+        index_end_rebreathing_decimal = round(time_offset_decimal, 2)
+    x_seconds_decimal.append(round(time_offset_decimal, 2))
+time_offset_decimal = 0.45
+print(x_seconds_decimal)
+
+# Time to be displayed on x axis
+gridx = []
+j = 0
+for i in range(0, len(x_seconds_decimal), 1):
+    j += 1
+    if(i == 1.5 or j == 6):
+        j = 0
+        gridx.append(x_seconds_decimal[i])
+
+
+# To detect where to plot the vertical line when using decimal x axis time stamps
+print(index_start_rebreathing_decimal)
+print(index_end_rebreathing_decimal)
+
 # Plot with mean values (no standard deviation)
 plt.figure(0)
 y1 = arr_sum_sentec
 x1 = range(0, len(arr_sum_sentec), 1)
-plt.title("MEDIAN VALUES - Sentec Device Forearm data")
-plt.plot(x1, y1, '.-', color="red", linewidth='1',)
-plt.xlabel('Sample Number')
+plt.title("MEDIAN VALUES - Sentec Device Lobe data")
+plt.plot(x_seconds_decimal, y1, '.-', color="red", linewidth='1',)
+plt.xlabel('Time [m.s]')
 plt.ylabel('Measured value [mmHg]')
 plt.grid(axis='y')
-plt.axvline(x=index_start_rebreathing-offset-1, color='gold')
-plt.axvline(x=index_start_rebreathing-offset+3, color='coral')
+# ---------If seconds are needed------------
+# plt.axvline(x=(index_start_rebreathing-offset-1)
+#            * 30 + time_stamp + 30, color='gold')
+# plt.axvline(x=(index_start_rebreathing-offset+3)
+#           * 30 + time_stamp + 30, color='coral')
+# ---------If minutes are needed------------
+plt.axvline(x=index_start_rebreathing_decimal, color='gold')
+plt.axvline(x=index_end_rebreathing_decimal, color='coral')
+plt.xticks(gridx)
+
 plt.legend(['Median values', 'Start rebreathing',
            'End rebreathing'], loc="upper left")
 
 plt.figure(1)
 y1 = arr_sum_sentec_delta
 x1 = range(0, len(arr_sum_sentec_delta), 1)
-plt.title("DELTA MEDIAN VALUES - Sentec Device Forearm data")
-plt.plot(x1, y1, '.-', color="red", linewidth='1',)
-plt.xlabel('Sample Number')
+plt.title("DELTA MEDIAN VALUES - Sentec Device Lobe data")
+#plt.plot(x_seconds, y1, '.-', color="red", linewidth='1',)
+plt.plot(x_seconds_decimal, y1, '.-', color="red", linewidth='1',)
+plt.xlabel('Time [m.s]')
 plt.ylabel('Measured value [mmHg]')
 plt.grid(axis='y')
-plt.axvline(x=index_start_rebreathing-offset-1, color='gold')
-plt.axvline(x=index_start_rebreathing-offset+3, color='coral')
+# ---------If seconds are needed------------
+# plt.axvline(x=(index_start_rebreathing-offset-1)
+#            * 30 + time_stamp + 30, color='gold')
+# plt.axvline(x=(index_start_rebreathing-offset+3)
+#           * 30 + time_stamp + 30, color='coral')
+# ---------If minutes are needed------------
+plt.axvline(x=index_start_rebreathing_decimal, color='gold')
+plt.axvline(x=index_end_rebreathing_decimal, color='coral')
+plt.xticks(gridx)
+
 plt.legend(['Median values', 'Start rebreathing',
            'End rebreathing'], loc="upper left")
 
 plt.figure(2)
 y1 = arr_sum_device_delta
 x1 = range(0, len(arr_sum_device_delta), 1)
-plt.title("DELTA MEDIAN VALUES - PCB Device Forearm data")
-plt.plot(x1, y1, '.-', color="red", linewidth='1',)
-plt.xlabel('Sample Number')
+plt.title("DELTA MEDIAN VALUES - PCB Device Lobe data")
+#plt.plot(x_seconds, y1, '.-', color="red", linewidth='1',)
+plt.plot(x_seconds_decimal, y1, '.-', color="red", linewidth='1',)
+plt.xlabel('Time [m.s]')
 plt.ylabel('Measured value [ppm]')
 plt.grid(axis='y')
-plt.axvline(x=index_start_rebreathing-offset-1, color='gold')
-plt.axvline(x=index_start_rebreathing-offset+3, color='coral')
+# ---------If seconds are needed------------
+# plt.axvline(x=(index_start_rebreathing-offset-1)
+#            * 30 + time_stamp + 30, color='gold')
+# plt.axvline(x=(index_start_rebreathing-offset+3)
+#           * 30 + time_stamp + 30, color='coral')
+# ---------If minutes are needed------------
+plt.axvline(x=index_start_rebreathing_decimal, color='gold')
+plt.axvline(x=index_end_rebreathing_decimal, color='coral')
+plt.xticks(gridx)
+
 plt.legend(['Median values', 'Start rebreathing',
            'End rebreathing'], loc="upper left")
 
@@ -294,39 +406,66 @@ plt.legend(['Median values', 'Start rebreathing',
 plt.figure(3)
 y1 = arr_sum_device
 x1 = range(0, len(arr_sum_device), 1)
-plt.title("MEDIAN VALUES - PCB Device Forearm data")
-plt.plot(x1, y1, '.-', color="red", linewidth='1',)
-plt.xlabel('Sample Number')
+plt.title("MEDIAN VALUES - PCB Device Lobe data")
+#plt.plot(x_seconds, y1, '.-', color="red", linewidth='1',)
+plt.plot(x_seconds_decimal, y1, '.-', color="red", linewidth='1',)
+plt.xlabel('Time [m.s]')
 plt.ylabel('Measured value [ppm]')
 plt.grid(axis='y')
-plt.axvline(x=index_start_rebreathing-offset-1, color='gold')
-plt.axvline(x=index_start_rebreathing-offset+3, color='coral')
+# ---------If seconds are needed------------
+# plt.axvline(x=(index_start_rebreathing-offset-1)
+#            * 30 + time_stamp + 30, color='gold')
+# plt.axvline(x=(index_start_rebreathing-offset+3)
+#           * 30 + time_stamp + 30, color='coral')
+# ---------If minutes are needed------------
+plt.axvline(x=index_start_rebreathing_decimal, color='gold')
+plt.axvline(x=index_end_rebreathing_decimal, color='coral')
+plt.xticks(gridx)
+
 plt.legend(['Median values', 'Start rebreathing',
            'End rebreathing'], loc="upper left")
 
 plt.figure(4)
 y1 = arr_sum_device_normalized
 x1 = range(0, len(arr_sum_device_normalized), 1)
-plt.title("NORMALIZED VALUES - PCB Device Forearm data")
-plt.plot(x1, y1, '.-', color="red", linewidth='1',)
-plt.xlabel('Sample Number')
+plt.title("NORMALIZED VALUES - PCB Device Lobe data")
+#plt.plot(x_seconds, y1, '.-', color="red", linewidth='1',)
+plt.plot(x_seconds_decimal, y1, '.-', color="red", linewidth='1',)
+plt.xlabel('Time [m.s]')
 plt.ylabel('Measured value [ppm]')
 plt.grid(axis='y')
-plt.axvline(x=index_start_rebreathing-offset-1, color='gold')
-plt.axvline(x=index_start_rebreathing-offset+3, color='coral')
+# ---------If seconds are needed------------
+# plt.axvline(x=(index_start_rebreathing-offset-1)
+#            * 30 + time_stamp + 30, color='gold')
+# plt.axvline(x=(index_start_rebreathing-offset+3)
+#           * 30 + time_stamp + 30, color='coral')
+# ---------If minutes are needed------------
+plt.axvline(x=index_start_rebreathing_decimal, color='gold')
+plt.axvline(x=index_end_rebreathing_decimal, color='coral')
+plt.xticks(gridx)
+
 plt.legend(['Median values', 'Start rebreathing',
            'End rebreathing'], loc="upper left")
 
 plt.figure(5)
-y1 = arr_sum_device_normalized
-x1 = range(0, len(arr_sum_device_normalized), 1)
-plt.title("NORMALIZED VALUES - PCB Device Forearm data")
-plt.plot(x1, y1, '.-', color="red", linewidth='1',)
-plt.xlabel('Sample Number')
+y1 = arr_sum_sentec_normalized
+x1 = range(0, len(arr_sum_sentec_normalized), 1)
+plt.title("NORMALIZED VALUES - Sentec Device Lobe data")
+#plt.plot(x_seconds, y1, '.-', color="red", linewidth='1',)
+plt.plot(x_seconds_decimal, y1, '.-', color="red", linewidth='1',)
+plt.xlabel('Time [m.s]')
 plt.ylabel('Measured value [ppm]')
 plt.grid(axis='y')
-plt.axvline(x=index_start_rebreathing-offset-1, color='gold')
-plt.axvline(x=index_start_rebreathing-offset+3, color='coral')
+# ---------If seconds are needed------------
+# plt.axvline(x=(index_start_rebreathing-offset-1)
+#            * 30 + time_stamp + 30, color='gold')
+# plt.axvline(x=(index_start_rebreathing-offset+3)
+#           * 30 + time_stamp + 30, color='coral')
+# ---------If minutes are needed------------
+plt.axvline(x=index_start_rebreathing_decimal, color='gold')
+plt.axvline(x=index_end_rebreathing_decimal, color='coral')
+plt.xticks(gridx)
+
 plt.legend(['Median values', 'Start rebreathing',
            'End rebreathing'], loc="upper left")
 
@@ -353,16 +492,26 @@ print("\n\nAverage std: %s" % average_std)
 
 # Plot with standard deviation
 plt.figure(6)
-plt.title("Mean values and Standard deviation - PCB Device Forearm data")
-plt.errorbar(x1, y1, std_arr, color='blue',
+plt.title("Mean values and Standard deviation - PCB Device Lobe data")
+# plt.errorbar(x_seconds, y1, std_arr, color='blue',
+#             fmt='-*', ecolor="red", elinewidth=0.5)
+plt.errorbar(x_seconds_decimal, y1, std_arr, color='blue',
              fmt='-*', ecolor="red", elinewidth=0.5)
-plt.xlabel('Sample Number')
+plt.xlabel('Time [m.s]')
 plt.ylabel('Measured value [ppm]')
 plt.grid(axis='y')
 plt.text(30, 1010, "Average Standard Deviation = %s ppm" %
          average_std, fontsize=7)
-plt.axvline(x=index_start_rebreathing-offset-1, color='gold')
-plt.axvline(x=index_start_rebreathing-offset+3, color='coral')
+# ---------If seconds are needed------------
+# plt.axvline(x=(index_start_rebreathing-offset-1)
+#            * 30 + time_stamp + 30, color='gold')
+# plt.axvline(x=(index_start_rebreathing-offset+3)
+#           * 30 + time_stamp + 30, color='coral')
+# ---------If minutes are needed------------
+plt.axvline(x=index_start_rebreathing_decimal, color='gold')
+plt.axvline(x=index_end_rebreathing_decimal, color='coral')
+plt.xticks(gridx)
+
 plt.legend(['Start rebreathing', 'End rebreathing',
            'Average values and std'], loc="upper left")
 
@@ -373,6 +522,31 @@ plt.xlabel('Sentec measured CO2 [mmHg]')
 plt.ylabel('PCB device measured [ppm]')
 plt.plot(delta_sentec, delta_PCB, 'o', color="blue")
 
+plt.figure(22)
+fig, ax1 = plt.subplots()
+ax2 = ax1.twinx()
+y1 = arr_sum_device_delta
+y2 = arr_sum_sentec_delta
+plt.title("Delta VALUES - Sentec and PCB Device Lobe data")
+#plt.plot(x_seconds, y1, '.-', color="red", linewidth='1',)
+ax1.plot(x_seconds_decimal, y1, '.-', color="royalblue", linewidth='1',)
+ax2.plot(x_seconds_decimal, y2, '.-', color="forestgreen", linewidth='1',)
+ax2.set_ylabel('Sentec Delta [mmHg]', color='tab:green')
+ax1.set_ylabel('PCB Device Delta [ppm]', color='tab:blue')
+ax1.grid(axis='y')
+plt.xlabel('Time [m.s]')
+# ---------If seconds are needed------------
+# plt.axvline(x=(index_start_rebreathing-offset-1)
+#            * 30 + time_stamp + 30, color='gold')
+# plt.axvline(x=(index_start_rebreathing-offset+3)
+#           * 30 + time_stamp + 30, color='coral')
+# ---------If minutes are needed------------
+plt.axvline(x=index_start_rebreathing_decimal, color='gold')
+plt.axvline(x=index_end_rebreathing_decimal, color='coral')
+plt.xticks(gridx)
+
+plt.legend(['Median values', 'Start rebreathing',
+           'End rebreathing'], loc="upper left")
 
 '''
 ---------------------------------------------------------------------------------
@@ -441,66 +615,66 @@ for j in range(0, rows, 1):
 # print(data_for_boxplot)
 
 plt.figure(8)
-plt.title("PCB Device Forearm boxplot")
+plt.title("PCB Device Lobe boxplot")
 plt.xlabel('Sample number')
 plt.ylabel('Measured value [ppm]')
 plt.grid(axis='y')
-plt.axvline(x=index_start_rebreathing-offset-1, color='gold')
-plt.axvline(x=index_start_rebreathing-offset+3, color='coral')
+plt.axvline(x=index_start_rebreathing-offset, color='gold')
+plt.axvline(x=index_start_rebreathing-offset+4, color='coral')
 plt.legend(['Start Rebreathing', 'Start rebreathing'], loc="upper left")
 plt.boxplot(data_for_boxplot)
 
 plt.figure(9)
-plt.title("PCB Device Forearm boxplot - Delta values")
+plt.title("PCB Device Lobe boxplot - Delta values")
 plt.xlabel('Sample number')
 plt.ylabel('Measured value [ppm]')
 plt.grid(axis='y')
 # here there isn't the -1 because boxplot index starts from 1 and not 0
-plt.axvline(x=index_start_rebreathing-offset-1, color='gold')
-plt.axvline(x=index_start_rebreathing-offset+3, color='coral')
+plt.axvline(x=index_start_rebreathing-offset, color='gold')
+plt.axvline(x=index_start_rebreathing-offset+4, color='coral')
 plt.legend(['Start Rebreathing', 'Start rebreathing'], loc="upper left")
 plt.boxplot(data_for_boxplot_delta, patch_artist=True)
 
 plt.figure(10)
-plt.title("Sentec Device Forearm boxplot")
+plt.title("Sentec Device Lobe boxplot")
 plt.xlabel('Sample number')
 plt.ylabel('Measured value [mmHg]')
 plt.grid(axis='y')
-plt.axvline(x=index_start_rebreathing-offset-1, color='gold')
-plt.axvline(x=index_start_rebreathing-offset+3, color='coral')
+plt.axvline(x=index_start_rebreathing-offset, color='gold')
+plt.axvline(x=index_start_rebreathing-offset+4, color='coral')
 plt.legend(['Start Rebreathing', 'Start rebreathing'], loc="upper left")
 plt.boxplot(S_data_for_boxplot)
 
 plt.figure(11)
-plt.title("Sentec Device Forearm boxplot - Delta values")
+plt.title("Sentec Device Lobe boxplot - Delta values")
 plt.xlabel('Sample number')
 plt.ylabel('Measured value [mmHg]')
 plt.grid(axis='y')
 # here there isn't the -1 because boxplot index starts from 1 and not 0
-plt.axvline(x=index_start_rebreathing-offset-1, color='gold')
-plt.axvline(x=index_start_rebreathing-offset+3, color='coral')
+plt.axvline(x=index_start_rebreathing-offset, color='gold')
+plt.axvline(x=index_start_rebreathing-offset+4, color='coral')
 plt.legend(['Start Rebreathing', 'Start rebreathing'], loc="upper left")
 plt.boxplot(S_data_for_boxplot_delta, patch_artist=True)
 
 plt.figure(12)
-plt.title("PCB Device Forearm boxplot normalized")
+plt.title("PCB Device Lobe boxplot normalized")
 plt.xlabel('Sample number')
 plt.ylabel('Measured value [ppm]')
 plt.grid(axis='y')
 # here there isn't the -1 because boxplot index starts from 1 and not 0
-plt.axvline(x=index_start_rebreathing-offset-1, color='gold')
-plt.axvline(x=index_start_rebreathing-offset+3, color='coral')
+plt.axvline(x=index_start_rebreathing-offset, color='gold')
+plt.axvline(x=index_start_rebreathing-offset+4, color='coral')
 plt.legend(['Start Rebreathing', 'Start rebreathing'], loc="upper left")
 plt.boxplot(data_for_boxplot_normalized, patch_artist=True)
 
 plt.figure(13)
-plt.title("Sentec Device Forearm boxplot normalized")
+plt.title("Sentec Device Lobe boxplot normalized")
 plt.xlabel('Sample number')
 plt.ylabel('Measured value [mmHg]')
 plt.grid(axis='y')
 # here there isn't the -1 because boxplot index starts from 1 and not 0
-plt.axvline(x=index_start_rebreathing-offset-1, color='gold')
-plt.axvline(x=index_start_rebreathing-offset+3, color='coral')
+plt.axvline(x=index_start_rebreathing-offset, color='gold')
+plt.axvline(x=index_start_rebreathing-offset+4, color='coral')
 plt.legend(['Start Rebreathing', 'Start rebreathing'], loc="upper left")
 plt.boxplot(S_data_for_boxplot_normalized, patch_artist=True)
 
@@ -511,26 +685,26 @@ ax1.boxplot(data_for_boxplot_delta, patch_artist=True, boxprops=dict(facecolor='
             medianprops=dict(color='orange'),)
 ax2.boxplot(S_data_for_boxplot_delta, patch_artist=True, boxprops=dict(facecolor='forestgreen', color='black'),
             medianprops=dict(color='orange'))
-plt.title("PCB Device and Sentec Forearm boxplot comparison - Delta values")
+plt.title("PCB Device and Sentec Lobe boxplot comparison - Delta values")
 ax2.set_ylabel('Sentec Delta [mmHg]', color='tab:green')
 ax1.set_ylabel('PCB Device Delta [ppm]', color='tab:blue')
 ax1.grid(axis='y')
 # ax2.grid(axis='y')
 # here there isn't the -1 because boxplot index starts from 1 and not 0
-plt.axvline(x=index_start_rebreathing-offset-1, color='gold')
-plt.axvline(x=index_start_rebreathing-offset+3, color='coral')
+plt.axvline(x=index_start_rebreathing-offset, color='gold')
+plt.axvline(x=index_start_rebreathing-offset+4, color='coral')
 plt.xlabel('Sample number')
 #plt.legend(['Start Rebreathing', 'Start rebreathing'], loc="upper left")
 #plt.boxplot(data_for_boxplot_delta, patch_artist=True)
 #plt.boxplot(S_data_for_boxplot_delta, patch_artist=True)
 
-
+# plt.show()
 '''
 ---------------------------------------------------------------------------------
 INTERPOLATION - RAW VALUES
 
 In the following section an exponential fitting is performed on PCB device
-data.
+data. IT IS NECESSARY TO USE DATA WITH 10s RESOLUTION
 
 Representative data are from subject SO3, 9-02-2022.
 
@@ -547,7 +721,6 @@ PARAMETERS: (in the interpolation section)
 
 ---------------------------------------------------------------------------------
 '''
-
 # PLOT OF THE STIMULUS
 exp_x1 = []
 exp_y1 = []
@@ -772,6 +945,7 @@ The plots to be drawn are 3:
     - Sentec device response
 ---------------------------------------------------------------------------------
 '''
+
 # Exctraction of x and y DELTA representative data
 y_repr_pcb_delta = []
 y_repr_sentec_delta = []

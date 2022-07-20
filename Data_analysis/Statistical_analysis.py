@@ -4,6 +4,7 @@
 
 Author: Luca Colombo, MSc Student in Biomedical Engineering - Technologies for Electronics
 
+\brief:
 This script is used to perform statistical analysis on data retrieved from script named
 <Aggreagated_data_analysis>.
 
@@ -15,8 +16,14 @@ This script is used to perform statistical analysis on data retrieved from scrip
 
 In the following section dataframe is imported and statistical analysis are performed:
 
-- Kruskal Wallis repetability test for non parametric distributions
-- Anova test for detectability/sensitivity
+- Normality test to check the normality of the data acquired for each subject
+- Kruskal Wallis repetability test for non parametric distributions (at a specific time
+instant comparing all subjects lobe data and forearm data)
+- Wilcoxon matched pairs test for non parametric distribution (between lobe and forearm
+data from the same subject)
+
+ANOVA, PAIRED T-TEST, INDEPENDENT T-TEST CANNOT BE DONE BECAUSE DISTRIBUTION IS NOT NORMAL 
+(see p-value resulting from the normality test)
 ------------------------------------------------------------------------------------------
 '''
 
@@ -273,13 +280,14 @@ for i in range(0, len(delta_matrix_pcb), 1):
 print("\n\nP-values for normality: ")
 normality_pvalue_pcb = pd.DataFrame(pvalues_normality)
 print(normality_pvalue_pcb)
+normality_pvalue_pcb.to_csv('Normality.csv', sep=';', index=False)
 
 # Since pvalue for normality D'Agostino test is << 0.05, data are not normally distributed
 
 
 '''
 ---------------------------------------------------------------------------------
-KRUSKAL WALLIS - Obsolete
+KRUSKAL WALLIS
 
 Considering a specific time instant, LOBE data from all the subjects are used to 
 create the first array, then FOREARM data from all the subjects are used to 
@@ -391,7 +399,7 @@ plt.legend(['PCB device', 'Sentec device',
 ---------------------------------------------------------------------------------
 WILCOXON MATCHED PAIRS TEST (a.k.a paird t-test for non normal distribution)
 
-Considering a specific subject, LOBE data are compared with FOREARM  for the
+Considering a specific subject, LOBE data are compared with FOREARM for the
 same subject.
 
 In the end, Wilcoxon test is performed on the two arrays, iteratively 
@@ -407,8 +415,8 @@ distribution of the differences x - y is symmetric about zero. It is a
 non-parametric version of the paired T-test.
 
 Hypotesis:
-    - H0: the mean difference between the paired exam scores is zero
-    - H1: the mean difference between the paired exam scores is not zero
+    - H0: there is not a difference between the two groups
+    - H1: there is a difference between the two groups
 
 If Pvalue < 0.05, H0 has to be rejected and H1 accepted.
 ---------------------------------------------------------------------------------
@@ -460,9 +468,11 @@ print(len(Wilcx_pcb))
 Wcx_df_pcb = pd.DataFrame(Wilcx_pcb)
 Wcx_df_sentec = pd.DataFrame(Wilcx_sentec)
 print(Wcx_df_pcb)
+Wcx_df_pcb.to_csv("WCX_Device_10.csv", sep=';', index=False)
 
-print("\n\nLength Wilcoxon results DEVICE:")
+print("\n\nLength Wilcoxon results SENTEC:")
 print(Wcx_df_sentec)
+Wcx_df_sentec.to_csv("WCX_sentec_10.csv", sep=';', index=False)
 
 
 '''
