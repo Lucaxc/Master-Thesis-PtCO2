@@ -43,8 +43,8 @@ print("-------------------------------------------------------------------------
 print("------------------------------- New run ---------------------------------")
 print("-------------------------------------------------------------------------")
 
-subject_id = 1
-flag_lobo = 0  # 0 if forearm
+subject_id = 18
+flag_lobo = 1  # 0 if forearm
 flag_30seconds = 1  # 0 if 10 seconds
 
 '''
@@ -56,11 +56,11 @@ Dataframes to be considered are separately for Lobe and forearm.
 Merge dataset is used for statistical analysis in a related script
 ---------------------------------------------------------------------------------
 '''
-df_pcb = pd.read_csv('CO2_df_30_median_P.csv', sep=";")
-df_sentec = pd.read_csv('Sentec_df_30_median_P.csv', sep=";")
+df_pcb = pd.read_csv('CO2_df_30_median_L.csv', sep=";")
+df_sentec = pd.read_csv('Sentec_df_30_median_L.csv', sep=";")
 
 # Importing CPET CSV; first row has not to be considered as header
-df_cpet = pd.read_csv('CPET_P_T.csv', sep=";", header=None)
+df_cpet = pd.read_csv('CPET_L_T.csv', sep=";", header=None)
 #print("\n\nDataframe PCB with START:")
 # print(df_pcb)
 
@@ -119,10 +119,10 @@ def plot_data(figure_id, x, y, title, xlabel, ylabel, legend, legend_location, s
 
     plt.legend(legend, loc=legend_location)
 
+
 #################################################################################
 #                                       CPET                                    #
 #################################################################################
-
 
 # CPET columns indexes
 columns_cpet = []
@@ -276,6 +276,7 @@ if(flag_lobo):
 
         # Data normalization
         support_PCB_normalized = (support_PCB/baseline_arr_PCB[i]) * 100
+        support_PCB_normalized = np.round(support_PCB_normalized, 2)
         delta_matrix_pcb.append(support_PCB)
         delta_matrix_pcb_normalized.append(support_PCB_normalized)
         # print(max(support_PCB[(int(index_start_rebreathing)-offset-1):-1]))
@@ -288,6 +289,7 @@ if(flag_lobo):
         support_sentec = support_sentec - baseline_arr_sentec[i]
         support_sentec_normalized = (
             support_sentec/baseline_arr_sentec[i]) * 100
+        support_sentec_normalized = np.round(support_sentec_normalized, 2)
         delta_matrix_sentec.append(support_sentec)
         delta_matrix_sentec_normalized.append(support_sentec_normalized)
         # print(support_sentec)
@@ -313,20 +315,40 @@ if(flag_lobo):
     print("------------------------------------------------------------------------------------")
     '''
 
-    '''
-    ----------------------------------------------------------------------------------------
-    BLAND ALTMAN PLOT
+    # Delta PCB and Sentec and Normalized PCB and Sentec dataframe export
+    # print(delta_matrix_pcb)
+    delta_matrix_pcb_T = np.transpose(delta_matrix_pcb)
+    delta_matrix_pcb_normalized_T = np.transpose(delta_matrix_pcb_normalized)
+    delta_matrix_sentec_T = np.transpose(delta_matrix_sentec)
+    delta_matrix_sentec_normalized_T = np.transpose(
+        delta_matrix_sentec_normalized)
+    # print(delta_matrix_pcb_T)
+    df_delta_pcb = pd.DataFrame(delta_matrix_pcb_T, columns=['28_01L', '9_02L', '15_02L',	'22_02L', '8_03L',
+                                                             '15_03L', '22_03L',	'12_04L', '19_04L', '3_05L', '10_05L', '24_05L',
+                                                             '31_05L', '14_06L', '21_06L', '5_07L', '12_07L', '18_07L', '19_07L'
+                                                             ])
 
-    In the following lines the BLAND-ALTMAN test is performed considering the subject_id
-    selected at the beginning of the script
-    ----------------------------------------------------------------------------------------
-    '''
-    df_blandalt = pd.DataFrame({'PCB': delta_matrix_pcb_normalized[subject_id],
-                                'Sentec': delta_matrix_sentec_normalized[subject_id]})
+    df_delta_pcb_normalized = pd.DataFrame(delta_matrix_pcb_normalized_T, columns=['28_01L', '9_02L', '15_02L',	'22_02L', '8_03L',
+                                                                                   '15_03L', '22_03L',	'12_04L', '19_04L', '3_05L', '10_05L', '24_05L',
+                                                                                   '31_05L', '14_06L', '21_06L', '5_07L', '12_07L', '18_07L', '19_07L'
+                                                                                   ])
 
-    f, ax = plt.subplots(1, figsize=(8, 5))
-    sm.graphics.mean_diff_plot(df_blandalt.PCB, df_blandalt.Sentec, ax=ax)
-    plt.show()
+    df_delta_sentec = pd.DataFrame(delta_matrix_sentec_T, columns=['28_01L', '9_02L', '15_02L',	'22_02L', '8_03L',
+                                                                   '15_03L', '22_03L',	'12_04L', '19_04L', '3_05L', '10_05L', '24_05L',
+                                                                   '31_05L', '14_06L', '21_06L', '5_07L', '12_07L', '18_07L', '19_07L'
+                                                                   ])
+
+    df_delta_sentec_normalized = pd.DataFrame(delta_matrix_sentec_normalized_T, columns=['28_01L', '9_02L', '15_02L',	'22_02L', '8_03L',
+                                                                                         '15_03L', '22_03L',	'12_04L', '19_04L', '3_05L', '10_05L', '24_05L',
+                                                                                         '31_05L', '14_06L', '21_06L', '5_07L', '12_07L', '18_07L', '19_07L'
+                                                                                         ])
+    # print(df_delta_pcb_normalized)
+    df_delta_pcb.to_csv('PCB_df_delta.csv', sep=';', index=False)
+    df_delta_pcb_normalized.to_csv(
+        'PCB_df_normalized.csv', sep=';', index=False)
+    df_delta_sentec.to_csv('Sentec_df_delta.csv', sep=';', index=False)
+    df_delta_sentec_normalized.to_csv(
+        'Sentec_df_normalized.csv', sep=';', index=False)
 
     # Generation of a unique array for aggregated analysis
     arr_sum_device = []
@@ -485,6 +507,88 @@ if(flag_lobo):
         # To detect where to plot the vertical line when using decimal x axis time stamps
         print(index_start_rebreathing_decimal)
         print(index_end_rebreathing_decimal)
+
+    '''
+    ----------------------------------------------------------------------------------------
+    BLAND ALTMAN PLOT
+
+    In the following lines the BLAND-ALTMAN test is performed considering the subject_id
+    selected at the beginning of the script
+    ----------------------------------------------------------------------------------------
+    '''
+    y_pcb = Data_matrix[subject_id].astype(float)
+    y_sentec = Data_matrix_sentec[subject_id].astype(float)
+    x_pcb = range(0, len(Data_matrix[subject_id]), 1)
+    x_sentec = range(0, len(Data_matrix_sentec[subject_id]), 1)
+    #y_pcb = delta_matrix_pcb[subject_id].astype(float)
+    #y_sentec = delta_matrix_sentec[subject_id].astype(float)
+    #x_pcb = range(0, len(delta_matrix_pcb[subject_id]), 1)
+    #x_sentec = range(0, len(delta_matrix_sentec[subject_id]), 1)
+    plot_data(31, x_pcb, y_pcb, "Subject Data plot - PCB",
+              'Time [m.s]', 'Measured value [mmHg]',
+              ['Median values', 'Start rebreathing',
+               'End rebreathing'], "upper left", '.-', "red", '1',  NONE, TRUE,
+              index_start_rebreathing-offset-1, index_start_rebreathing-offset+4-1)
+    plot_data(32, x_sentec, y_sentec, "Subject Data plot - Sentec",
+              'Time [m.s]', 'Measured value [mmHg]',
+              ['Median values', 'Start rebreathing',
+               'End rebreathing'], "upper left", '.-', "red", '1',  NONE, TRUE,
+              index_start_rebreathing-offset-1, index_start_rebreathing-offset+4-1)
+    plt.show()
+
+    df_blandalt = pd.DataFrame({'PCB': delta_matrix_pcb_normalized[subject_id],
+                                'Sentec': delta_matrix_sentec_normalized[subject_id]})
+
+    PCB_ass = [5.3, 5.3, 5, 6, 5.3, 4.3, 2, 6.3,
+               2.3, 6, 6, 4.3, 5.3, 10, 5, 3.3, 6.3]
+    PCB_picc = [5, 6.3, 5.3, 3.3, 14, 11, 6,
+                6.3, 5.3, 6.3, 6, 9, 7, 8, 11, 7, 10]
+    PCB_sat = [8, 9, 11, 4, 14, 14, 8, 12,
+               5.3, 6.3, 6.3, 14, 7, 14, 14, 14, 10]
+    sentec_ass = [1.3, 1.3, 5.3, 6, 4.3, 2.3, 8.3,
+                  5.3, 7, 4, 10, 6, 10, 1.3, 4.3, 10, 6.3]
+    sentec_picc = [3.3, 3.3, 4.3, 3.3, 3.3,
+                   3.3, 3.3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3]
+    sentec_sat = [10.3, 14, 9.3, 6.3, 14, 10,
+                  9, 6, 14, 6, 9, 8, 8.3, 9, 14, 7.3, 14]
+
+    df_blandalt_ass = pd.DataFrame({'PCB': PCB_ass,
+                                    'Sentec': sentec_ass})
+
+    df_blandalt_picc = pd.DataFrame({'PCB': PCB_picc,
+                                     'Sentec': sentec_picc})
+
+    df_blandalt_sat = pd.DataFrame({'PCB': PCB_sat,
+                                    'Sentec': sentec_sat})
+
+    f, ax = plt.subplots(1, figsize=(8, 5))
+    sm.graphics.mean_diff_plot(df_blandalt.PCB, df_blandalt.Sentec, ax=ax)
+
+    f, ax = plt.subplots(1, figsize=(8, 5))
+    ax.set_title("BLDALT - Baseline")
+    sm.graphics.mean_diff_plot(
+        df_blandalt_ass.PCB, df_blandalt_ass.Sentec, ax=ax)
+
+    f, ax = plt.subplots(1, figsize=(8, 5))
+    ax.set_title("BLDALT - Peak")
+    sm.graphics.mean_diff_plot(
+        df_blandalt_picc.PCB, df_blandalt_picc.Sentec, ax=ax)
+
+    f, ax = plt.subplots(1, figsize=(8, 5))
+    ax.set_title("BLDALT - Saturation")
+    sm.graphics.mean_diff_plot(
+        df_blandalt_sat.PCB, df_blandalt_sat.Sentec, ax=ax)
+
+    plt.figure(32)
+    plt.title("Sentec - PCB device correlation analysis")
+    plt.xlabel('Sentec time [min]')
+    plt.ylabel('PCB time [min]')
+    plt.plot(sentec_ass, PCB_ass, 'o', color="blue")
+    plt.plot(sentec_picc, PCB_picc, 'o', color="red")
+    plt.plot(sentec_sat, PCB_sat, 'o', color="green")
+    plt.legend(["Baseline", "Peak", "Saturation"], loc='best')
+    plt.grid(axis='both')
+    plt.show()
 
     # Plot with median values (no standard deviation)
     y1 = arr_sum_sentec
@@ -1299,7 +1403,7 @@ if(flag_lobo):
         plt.legend(['Raw PCB device data - DELTA', 'Fitted curve', 'Start rebreathing', 'Physiological delay',
                     'Sensors delay'], loc="lower right")
 
-plt.show()
+# plt.show()
 
 
 #############################################################################################################
@@ -1403,6 +1507,7 @@ if(flag_lobo == 0):
 
         # Data normalization
         support_PCB_normalized = (support_PCB/baseline_arr_PCB[i]) * 100
+        support_PCB_normalized = np.round(support_PCB_normalized, 2)
         delta_matrix_pcb.append(support_PCB)
         delta_matrix_pcb_normalized.append(support_PCB_normalized)
         # print(max(support_PCB[(int(index_start_rebreathing)-offset-1):-1]))
@@ -1415,6 +1520,7 @@ if(flag_lobo == 0):
         support_sentec = support_sentec - baseline_arr_sentec[i]
         support_sentec_normalized = (
             support_sentec/baseline_arr_sentec[i]) * 100
+        support_sentec_normalized = np.round(support_sentec_normalized, 2)
         delta_matrix_sentec.append(support_sentec)
         delta_matrix_sentec_normalized.append(support_sentec_normalized)
         # print(support_sentec)
@@ -1440,22 +1546,39 @@ if(flag_lobo == 0):
     print("------------------------------------------------------------------------------------")
     '''
 
-    '''
-    ----------------------------------------------------------------------------------------
-    BLAND ALTMAN PLOT
+    # Delta PCB and Sentec and Normalized PCB and Sentec dataframe export
+    # print(delta_matrix_pcb)
+    delta_matrix_pcb_T = np.transpose(delta_matrix_pcb)
+    delta_matrix_pcb_normalized_T = np.transpose(delta_matrix_pcb_normalized)
+    delta_matrix_sentec_T = np.transpose(delta_matrix_sentec)
+    delta_matrix_sentec_normalized_T = np.transpose(
+        delta_matrix_sentec_normalized)
+    # print(delta_matrix_pcb_T)
+    df_delta_pcb = pd.DataFrame(delta_matrix_pcb_T, columns=['28_01P', '9_02P', '15_02P',	'22_02P', '8_03P',
+                                                             '15_03P', '22_03P',	'12_04P', '19_04P', '3_05P', '10_05P', '24_05P',
+                                                             '31_05P', '14_06P', '21_06P', '5_07P', '12_07P', '18_07P', '19_07P'
+                                                             ])
 
-    In the following lines the BLAND-ALTMAN test is performed considering the subject_id
-    selected at the beginning of the script
-    ----------------------------------------------------------------------------------------
-    '''
-    df_blandalt = pd.DataFrame({'PCB': delta_matrix_pcb_normalized[subject_id],
-                                'Sentec': delta_matrix_sentec_normalized[subject_id]})
+    df_delta_pcb_normalized = pd.DataFrame(delta_matrix_pcb_normalized_T, columns=['28_01P', '9_02P', '15_02P',	'22_02P', '8_03P',
+                                                                                   '15_03P', '22_03P',	'12_04P', '19_04P', '3_05P', '10_05P', '24_05P',
+                                                                                   '31_05P', '14_06P', '21_06P', '5_07P', '12_07P', '18_07P', '19_07P'
+                                                                                   ])
 
-    f, ax = plt.subplots(1, figsize=(8, 5))
-    plt.title("Bland-Altman Plot")
-    sm.graphics.mean_diff_plot(df_blandalt.PCB, df_blandalt.Sentec, ax=ax)
-    plt.show()
+    df_delta_sentec = pd.DataFrame(delta_matrix_sentec_T, columns=['28_01P', '9_02P', '15_02P',	'22_02P', '8_03P',
+                                                                   '15_03P', '22_03P',	'12_04P', '19_04P', '3_05P', '10_05P', '24_05P',
+                                                                   '31_05P', '14_06P', '21_06P', '5_07P', '12_07P', '18_07P', '19_07P'
+                                                                   ])
 
+    df_delta_sentec_normalized = pd.DataFrame(delta_matrix_sentec_normalized_T, columns=['28_01P', '9_02P', '15_02P',	'22_02P', '8_03P',
+                                                                                         '15_03P', '22_03P',	'12_04P', '19_04P', '3_05P', '10_05P', '24_05P',
+                                                                                         '31_05P', '14_06P', '21_06P', '5_07P', '12_07P', '18_07P', '19_07P'
+                                                                                         ])
+    df_delta_pcb.to_csv('PCB_df_delta.csv', sep=';', index=False)
+    df_delta_pcb_normalized.to_csv(
+        'PCB_df_normalized.csv', sep=';', index=False)
+    df_delta_sentec.to_csv('Sentec_df_delta.csv', sep=';', index=False)
+    df_delta_sentec_normalized.to_csv(
+        'Sentec_df_normalized.csv', sep=';', index=False)
     # Generation of a unique array for aggregated analysis
     arr_sum_device = []
     arr_sum_sentec = []
@@ -1613,6 +1736,84 @@ if(flag_lobo == 0):
         # To detect where to plot the vertical line when using decimal x axis time stamps
         print(index_start_rebreathing_decimal)
         print(index_end_rebreathing_decimal)
+
+    '''
+    ----------------------------------------------------------------------------------------
+    BLAND ALTMAN PLOT
+
+    In the following lines the BLAND-ALTMAN test is performed considering the subject_id
+    selected at the beginning of the script
+    ----------------------------------------------------------------------------------------
+    '''
+    y_pcb = Data_matrix[subject_id].astype(float)
+    y_sentec = Data_matrix_sentec[subject_id].astype(float)
+    x_pcb = range(0, len(Data_matrix[subject_id]), 1)
+    x_sentec = range(0, len(Data_matrix_sentec[subject_id]), 1)
+    #y_pcb = delta_matrix_pcb[subject_id].astype(float)
+    #y_sentec = delta_matrix_sentec[subject_id].astype(float)
+    #x_pcb = range(0, len(delta_matrix_pcb[subject_id]), 1)
+    #x_sentec = range(0, len(delta_matrix_sentec[subject_id]), 1)
+    plot_data(31, x_pcb, y_pcb, "Subject Data plot - PCB",
+              'Time [m.s]', 'Measured value [mmHg]',
+              ['Median values', 'Start rebreathing',
+               'End rebreathing'], "upper left", '.-', "red", '1',  NONE, TRUE,
+              index_start_rebreathing-offset-1, index_start_rebreathing-offset+4-1)
+    plot_data(32, x_sentec, y_sentec, "Subject Data plot - Sentec",
+              'Time [m.s]', 'Measured value [mmHg]',
+              ['Median values', 'Start rebreathing',
+               'End rebreathing'], "upper left", '.-', "red", '1',  NONE, TRUE,
+              index_start_rebreathing-offset-1, index_start_rebreathing-offset+4-1)
+    plt.show()
+
+    PCB_ass = [4, 8, 5, 4.3, 3, 4, 10, 4.3, 5, 4, 7, 3, 3, 3.3]
+    PCB_picc = [4, 4.3, 6.3, 7.3, 4, 10.3, 6.3, 6.3, 6, 5.3, 8, 12, 6.3, 9]
+    PCB_sat = [4, 4.3, 6.3, 7.3, 4.3, 14, 6.3, 6.3, 6, 14, 8, 12, 6.3, 11]
+    sentec_ass = [10, 3, 7.3, 7, 10, 3, 6, 7.3, 4, 8.3, 10, 10, 5, 10]
+    sentec_picc = [4, 4, 4, 4.3, 4.3, 4, 3, 3.3, 3.3, 3.3, 4, 3.3, 3.3, 4]
+    sentec_sat = [14, 14, 14, 14, 14, 9.3, 7.3, 7, 6, 14, 8, 9, 14, 8]
+
+    df_blandalt_ass = pd.DataFrame({'PCB': PCB_ass,
+                                    'Sentec': sentec_ass})
+
+    df_blandalt_picc = pd.DataFrame({'PCB': PCB_picc,
+                                     'Sentec': sentec_picc})
+
+    df_blandalt_sat = pd.DataFrame({'PCB': PCB_sat,
+                                    'Sentec': sentec_sat})
+
+    f, ax = plt.subplots(1, figsize=(8, 5))
+    ax.set_title("BLDALT - Baseline")
+    sm.graphics.mean_diff_plot(
+        df_blandalt_ass.PCB, df_blandalt_ass.Sentec, ax=ax)
+
+    f, ax = plt.subplots(1, figsize=(8, 5))
+    ax.set_title("BLDALT - Peak")
+    sm.graphics.mean_diff_plot(
+        df_blandalt_picc.PCB, df_blandalt_picc.Sentec, ax=ax)
+
+    f, ax = plt.subplots(1, figsize=(8, 5))
+    ax.set_title("BLDALT - Saturation")
+    sm.graphics.mean_diff_plot(
+        df_blandalt_sat.PCB, df_blandalt_sat.Sentec, ax=ax)
+
+    plt.figure(32)
+    plt.title("Sentec - PCB device correlation analysis")
+    plt.xlabel('Sentec time [min]')
+    plt.ylabel('PCB time [min]')
+    plt.plot(sentec_ass, PCB_ass, 'o', color="blue")
+    plt.plot(sentec_picc, PCB_picc, 'o', color="red")
+    plt.plot(sentec_sat, PCB_sat, 'o', color="green")
+    plt.legend(["Baseline", "Peak", "Saturation"], loc='best')
+    plt.grid(axis='both')
+
+    plt.show()
+
+    df_blandalt = pd.DataFrame({'PCB': delta_matrix_pcb_normalized[subject_id],
+                                'Sentec': delta_matrix_sentec_normalized[subject_id]})
+
+    f, ax = plt.subplots(1, figsize=(8, 5))
+    sm.graphics.mean_diff_plot(df_blandalt.PCB, df_blandalt.Sentec, ax=ax)
+    # plt.show()
 
     # Plot with mean values (no standard deviation)
     plt.figure(0)
@@ -2508,4 +2709,4 @@ if(flag_lobo == 0):
         plt.legend(['Raw PCB device data - DELTA', 'Fitted curve', 'Start rebreathing', 'Physiological delay',
                     'Sensors delay'], loc="lower right")
 
-    plt.show()
+    # plt.show()
