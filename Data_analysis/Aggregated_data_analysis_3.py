@@ -36,6 +36,7 @@ from sklearn import metrics
 from scipy import stats
 import math
 import scipy
+from scipy.signal import butter, lfilter, freqz
 import statsmodels.api as sm
 
 # Importing dataframe
@@ -43,8 +44,8 @@ print("-------------------------------------------------------------------------
 print("------------------------------- New run ---------------------------------")
 print("-------------------------------------------------------------------------")
 
-subject_id = 18
-flag_lobo = 1  # 0 if forearm
+subject_id = 5
+flag_lobo = 0  # 0 if forearm
 flag_30seconds = 1  # 0 if 10 seconds
 
 '''
@@ -56,11 +57,11 @@ Dataframes to be considered are separately for Lobe and forearm.
 Merge dataset is used for statistical analysis in a related script
 ---------------------------------------------------------------------------------
 '''
-df_pcb = pd.read_csv('CO2_df_30_median_L.csv', sep=";")
-df_sentec = pd.read_csv('Sentec_df_30_median_L.csv', sep=";")
+df_pcb = pd.read_csv('CO2_df_30_median_P.csv', sep=";")
+df_sentec = pd.read_csv('Sentec_df_30_median_P.csv', sep=";")
 
 # Importing CPET CSV; first row has not to be considered as header
-df_cpet = pd.read_csv('CPET_L_T.csv', sep=";", header=None)
+df_cpet = pd.read_csv('CPET_P_T.csv', sep=";", header=None)
 #print("\n\nDataframe PCB with START:")
 # print(df_pcb)
 
@@ -120,9 +121,39 @@ def plot_data(figure_id, x, y, title, xlabel, ylabel, legend, legend_location, s
     plt.legend(legend, loc=legend_location)
 
 
+################ Butterworth Low-Pass #################
+# \brief: Function that calls a Butterworth low pass filter.
+# \parameters:
+#   @param <figure_id>: figure number to be opened
+#   @param <x>: x-axis array
+#   @param <y>: y-axis array
+#   @param <title>: string containing the plot's title
+#   @param <xlabel>: string containing the x-axis label
+#   @param <xlabel>: string containing the y-axis label
+#   @param <legend>: array of strings containing the legend
+#   @param <legend_location>: legend location
+#   @param <style>: line style. If put to NONE, by default it will be black and continuous
+#   @param <color>: color of the plot
+#   @param <linewidth>: thickness of the plot
+#   @param <gridx>: array to setup the x-axis grid
+#   @param <ygrid>: boolean, TRUE or FALSE
+#   @param <start_rebr>: rebreathing starting index
+#   @param <end_rebr>: rebreathing ending index
+# \return butterworth filter
+######################################################
+def butter_lowpass(cutoff, fs, order=5):
+    return butter(order, cutoff, fs=fs, btype='low', analog=False)
+
+
+def butter_lowpass_filter(data, cutoff, fs, order=5):
+    b, a = butter_lowpass(cutoff, fs, order=order)
+    y = lfilter(b, a, data)
+    return y
+
 #################################################################################
 #                                       CPET                                    #
 #################################################################################
+
 
 # CPET columns indexes
 columns_cpet = []
@@ -287,6 +318,7 @@ if(flag_lobo):
 
         # baseline subrtaction from array
         support_sentec = support_sentec - baseline_arr_sentec[i]
+        support_sentec = np.round(support_sentec, 2)
         support_sentec_normalized = (
             support_sentec/baseline_arr_sentec[i]) * 100
         support_sentec_normalized = np.round(support_sentec_normalized, 2)
@@ -315,6 +347,67 @@ if(flag_lobo):
     print("------------------------------------------------------------------------------------")
     '''
 
+    # Filtering (individual selected subject)
+    order = 2
+    fs = 1.0       # sample rate, Hz
+    cutoff = 0.2  # desired cutoff frequency of the filter, Hz
+    filtered_co2 = butter_lowpass_filter(
+        Data_matrix_no_offset[subject_id].astype(float), cutoff, fs, order)
+
+    filtered_co2_cut = []
+    # Elimination of the first bias
+    for i in range(5, len(filtered_co2), 1):
+        filtered_co2_cut.append(filtered_co2[i])
+
+    y_pcb = Data_matrix_no_offset[subject_id].astype(float)
+    x_pcb = range(0, len(Data_matrix_no_offset[subject_id]), 1)
+    x_pcb_cut = range(0, len(filtered_co2_cut), 1)
+    plt.figure()
+    plt.plot(x_pcb, y_pcb, 'k')
+    plt.title("Pre-filtering signal")
+    plt.grid(axis='y')
+    plt.axvline(x=index_start_rebreathing-1-offset, color='gold')
+    plt.axvline(x=index_start_rebreathing+3-offset, color='coral')
+    plt.figure()
+    plt.plot(x_pcb_cut, filtered_co2_cut, 'k')
+    plt.title("Filtered signal")
+    plt.grid(axis='y')
+    plt.axvline(x=index_start_rebreathing-1-offset, color='gold')
+    plt.axvline(x=index_start_rebreathing+3-offset, color='coral')
+
+    # Maximal value extraction for each subject
+    max_sentec = []
+    max_pcb = []
+    for i in range(0, len(Data_matrix_no_offset), 1):
+        filtered_co2 = butter_lowpass_filter(
+            Data_matrix_no_offset[i].astype(float), cutoff, fs, order)
+
+        filtered_co2_cut = []
+        # Elimination of the first bias
+        for j in range(5, len(filtered_co2), 1):
+            filtered_co2_cut.append(filtered_co2[j])
+
+        support_sentec = Data_matrix_no_offset_sentec[i].astype(float)
+        max_sentec.append(
+            round(max(support_sentec[(int(index_start_rebreathing)-offset):-1]), 2))
+        max_pcb.append(
+            round(max(filtered_co2_cut[(int(index_start_rebreathing)-offset):-1]), 2))
+
+    print("\n\nArray of max SENTEC")
+    print(max_sentec)
+    print("\n\nArray of max PCB")
+    print(max_pcb)
+    print(len(max_sentec))
+    print(len(max_pcb))
+
+    # Scatterplot with maximal values
+    plt.figure()
+    plt.plot(max_sentec, max_pcb, 'o', color='royalblue')
+    plt.title("Correlation on maximal values, PCB device and Sentec device")
+    plt.grid(axis='both')
+    plt.xlabel('Sentec device - [mmHg]')
+    plt.ylabel('PCB device - [ppm]')
+
     # Delta PCB and Sentec and Normalized PCB and Sentec dataframe export
     # print(delta_matrix_pcb)
     delta_matrix_pcb_T = np.transpose(delta_matrix_pcb)
@@ -342,7 +435,7 @@ if(flag_lobo):
                                                                                          '15_03L', '22_03L',	'12_04L', '19_04L', '3_05L', '10_05L', '24_05L',
                                                                                          '31_05L', '14_06L', '21_06L', '5_07L', '12_07L', '18_07L', '19_07L'
                                                                                          ])
-    # print(df_delta_pcb_normalized)
+    print(df_delta_sentec)
     df_delta_pcb.to_csv('PCB_df_delta.csv', sep=';', index=False)
     df_delta_pcb_normalized.to_csv(
         'PCB_df_normalized.csv', sep=';', index=False)
@@ -451,6 +544,7 @@ if(flag_lobo):
                 index_end_rebreathing_decimal = round(time_offset_decimal, 2)
             x_seconds_decimal.append(round(time_offset_decimal, 2))
         time_offset_decimal = 0.45
+        print("\n\nx_seconds_decimal 30s:")
         print(x_seconds_decimal)
 
         # Time to be displayed on x axis
@@ -460,6 +554,7 @@ if(flag_lobo):
                 gridx.append(x_seconds_decimal[i])
 
         # To detect where to plot the vertical line when using decimal x axis time stamps
+        print("\n\nindex_start_rebreathing_decimal and end 30s:")
         print(index_start_rebreathing_decimal)
         print(index_end_rebreathing_decimal)
 
@@ -493,6 +588,7 @@ if(flag_lobo):
                 index_end_rebreathing_decimal = round(time_offset_decimal, 2)
             x_seconds_decimal.append(round(time_offset_decimal, 2))
         time_offset_decimal = 0.45
+        print("\n\nx_seconds_decimal 10s:")
         print(x_seconds_decimal)
 
         # Time to be displayed on x axis
@@ -505,6 +601,7 @@ if(flag_lobo):
                 gridx.append(x_seconds_decimal[i])
 
         # To detect where to plot the vertical line when using decimal x axis time stamps
+        print("\n\nindex_start_rebreathing_decimal and end 10s:")
         print(index_start_rebreathing_decimal)
         print(index_end_rebreathing_decimal)
 
@@ -1518,6 +1615,7 @@ if(flag_lobo == 0):
 
         # baseline subrtaction from array
         support_sentec = support_sentec - baseline_arr_sentec[i]
+        support_sentec = np.round(support_sentec, 2)
         support_sentec_normalized = (
             support_sentec/baseline_arr_sentec[i]) * 100
         support_sentec_normalized = np.round(support_sentec_normalized, 2)
@@ -1545,6 +1643,67 @@ if(flag_lobo == 0):
     print(delta_sentec)
     print("------------------------------------------------------------------------------------")
     '''
+
+    # Filtering (individual selected subject)
+    order = 2
+    fs = 1.0       # sample rate, Hz
+    cutoff = 0.2  # desired cutoff frequency of the filter, Hz
+    filtered_co2 = butter_lowpass_filter(
+        Data_matrix_no_offset[subject_id].astype(float), cutoff, fs, order)
+
+    filtered_co2_cut = []
+    # Elimination of the first bias
+    for i in range(5, len(filtered_co2), 1):
+        filtered_co2_cut.append(filtered_co2[i])
+
+    y_pcb = Data_matrix_no_offset[subject_id].astype(float)
+    x_pcb = range(0, len(Data_matrix_no_offset[subject_id]), 1)
+    x_pcb_cut = range(0, len(filtered_co2_cut), 1)
+    plt.figure()
+    plt.plot(x_pcb, y_pcb, 'k')
+    plt.title("Pre-filtering signal")
+    plt.grid(axis='y')
+    plt.axvline(x=index_start_rebreathing-1-offset, color='gold')
+    plt.axvline(x=index_start_rebreathing+3-offset, color='coral')
+    plt.figure()
+    plt.plot(x_pcb_cut, filtered_co2_cut, 'k')
+    plt.title("Filtered signal")
+    plt.grid(axis='y')
+    plt.axvline(x=index_start_rebreathing-1-offset, color='gold')
+    plt.axvline(x=index_start_rebreathing+3-offset, color='coral')
+
+    # Maximal value extraction for each subject
+    max_sentec = []
+    max_pcb = []
+    for i in range(0, len(Data_matrix_no_offset), 1):
+        filtered_co2 = butter_lowpass_filter(
+            Data_matrix_no_offset[i].astype(float), cutoff, fs, order)
+
+        filtered_co2_cut = []
+        # Elimination of the first bias
+        for j in range(5, len(filtered_co2), 1):
+            filtered_co2_cut.append(filtered_co2[j])
+
+        support_sentec = Data_matrix_no_offset_sentec[i].astype(float)
+        max_sentec.append(
+            round(max(support_sentec[(int(index_start_rebreathing)-offset):-1]), 2))
+        max_pcb.append(
+            round(max(filtered_co2_cut[(int(index_start_rebreathing)-offset):-1]), 2))
+
+    print("\n\nArray of max SENTEC")
+    print(max_sentec)
+    print("\n\nArray of max PCB")
+    print(max_pcb)
+    print(len(max_sentec))
+    print(len(max_pcb))
+
+    # Scatterplot with maximal values
+    plt.figure()
+    plt.plot(max_sentec, max_pcb, 'o', color='royalblue')
+    plt.title("Correlation on maximal values, PCB device and Sentec device")
+    plt.grid(axis='both')
+    plt.xlabel('Sentec device - [mmHg]')
+    plt.ylabel('PCB device - [ppm]')
 
     # Delta PCB and Sentec and Normalized PCB and Sentec dataframe export
     # print(delta_matrix_pcb)
@@ -1680,6 +1839,7 @@ if(flag_lobo == 0):
                 index_end_rebreathing_decimal = round(time_offset_decimal, 2)
             x_seconds_decimal.append(round(time_offset_decimal, 2))
         time_offset_decimal = 0.45
+        print("\n\nx_seconds_decimal 30s:")
         print(x_seconds_decimal)
 
         # Time to be displayed on x axis
@@ -1689,6 +1849,7 @@ if(flag_lobo == 0):
                 gridx.append(x_seconds_decimal[i])
 
         # To detect where to plot the vertical line when using decimal x axis time stamps
+        print("\n\nindex_start_rebreathing_decimal and end 30s:")
         print(index_start_rebreathing_decimal)
         print(index_end_rebreathing_decimal)
 
@@ -1722,6 +1883,7 @@ if(flag_lobo == 0):
                 index_end_rebreathing_decimal = round(time_offset_decimal, 2)
             x_seconds_decimal.append(round(time_offset_decimal, 2))
         time_offset_decimal = 0.45
+        print("\n\nx_seconds_decimal 10s:")
         print(x_seconds_decimal)
 
         # Time to be displayed on x axis
@@ -1734,6 +1896,7 @@ if(flag_lobo == 0):
                 gridx.append(x_seconds_decimal[i])
 
         # To detect where to plot the vertical line when using decimal x axis time stamps
+        print("\n\nindex_start_rebreathing_decimal and end 10s:")
         print(index_start_rebreathing_decimal)
         print(index_end_rebreathing_decimal)
 
